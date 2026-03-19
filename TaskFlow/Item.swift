@@ -10,9 +10,15 @@ import SwiftData
 
 @Model
 final class Item {
-    var timestamp: Date
-    
-    init(timestamp: Date) {
-        self.timestamp = timestamp
+    var title: String
+    var isCompleted: Bool
+    var createdAt: Date
+    var notes: String
+
+    init(title: String, notes: String = "") {
+        self.title = title
+        self.isCompleted = false
+        self.createdAt = Date()
+        self.notes = notes
     }
 }
