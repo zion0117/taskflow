@@ -86,28 +86,34 @@ struct AddProjectSheet: View {
     var area: Area? = nil
 
     @State private var name = ""
-    @State private var selectedColor = "007AFF"
+    @State private var selectedColor = "A8C8E8"
 
-    let colors = [
-        "007AFF", "AF52DE", "FF9500", "34C759",
-        "FF3B30", "FF2D55", "5856D6", "00C7BE",
+    let presets = [
+        "A8C8E8", // 블루
+        "BBA8E8", // 라벤더
+        "F5C8A0", // 피치
+        "A0D4B0", // 민트
+        "F5AAAA", // 로즈
+        "E8A8BC", // 모브
+        "B8B8E8", // 페리윙클
+        "A0D8D4", // 틸
     ]
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 Circle()
                     .fill(Color(hex: selectedColor) ?? .blue)
-                    .frame(width: 12, height: 12)
+                    .frame(width: 10, height: 10)
 
                 ZStack(alignment: .leading) {
                     if name.isEmpty {
                         Text("새 프로젝트")
-                            .font(.system(size: 16))
+                            .font(.system(size: 14))
                             .foregroundStyle(Color.primary.opacity(0.28))
                     }
                     TextField("", text: $name)
-                        .font(.system(size: 16))
+                        .font(.system(size: 14))
                         .textFieldStyle(.plain)
                         .focused($focused)
                         .onSubmit { submit() }
@@ -124,20 +130,20 @@ struct AddProjectSheet: View {
                         .clipShape(Capsule())
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 12)
+            .padding(.horizontal, 14)
+            .padding(.top, 13)
+            .padding(.bottom, 10)
 
-            // 색상
+            // 색상 프리셋
             HStack(spacing: 0) {
-                ForEach(colors, id: \.self) { hex in
+                ForEach(presets, id: \.self) { hex in
                     ZStack {
                         Circle()
                             .fill(Color(hex: hex) ?? .blue)
-                            .frame(width: 20, height: 20)
+                            .frame(width: 17, height: 17)
                         if selectedColor == hex {
                             Image(systemName: "checkmark")
-                                .font(.system(size: 8, weight: .bold))
+                                .font(.system(size: 7, weight: .bold))
                                 .foregroundStyle(.white)
                         }
                     }
@@ -147,17 +153,17 @@ struct AddProjectSheet: View {
                     .frame(maxWidth: .infinity)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 10)
+            .padding(.horizontal, 14)
+            .padding(.bottom, 8)
 
-            Divider()
+            Divider().opacity(0.4)
 
             HStack {
                 Button { dismiss() } label: {
                     Image(systemName: "xmark")
-                        .font(.system(size: 12, weight: .medium))
+                        .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(Color.secondary)
-                        .frame(width: 26, height: 26)
+                        .frame(width: 22, height: 22)
                         .background(Color.secondary.opacity(0.1))
                         .clipShape(Circle())
                 }
@@ -167,9 +173,9 @@ struct AddProjectSheet: View {
 
                 Button { submit() } label: {
                     Image(systemName: "arrow.up")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(name.isEmpty ? Color.secondary : Color.white)
-                        .frame(width: 26, height: 26)
+                        .frame(width: 22, height: 22)
                         .background(name.isEmpty ? Color.secondary.opacity(0.12) : Color.blue)
                         .clipShape(Circle())
                 }
@@ -177,12 +183,13 @@ struct AddProjectSheet: View {
                 .disabled(name.isEmpty)
                 .keyboardShortcut(.return, modifiers: .command)
             }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
         }
-        .frame(width: 300)
+        .frame(width: 280)
         .background(.background)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .shadow(color: .black.opacity(0.1), radius: 16, x: 0, y: 6)
         .onAppear { focused = true }
     }
 
@@ -323,10 +330,20 @@ struct AddTaskSheet: View {
 
     func submit() {
         guard !title.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-        let task = Task(title: title, notes: notes, project: project, dueDate: hasDueDate ? dueDate : nil)
+        let finalDueDate = hasDueDate ? dueDate : nil
+        let task = Task(title: title, notes: notes, project: project, dueDate: finalDueDate)
         project.tasks.append(task)
         modelContext.insert(task)
         try? modelContext.save()
+        if let date = finalDueDate {
+            _Concurrency.Task {
+                await CalendarManager.shared.addEvent(
+                    title: title,
+                    dueDate: date,
+                    notes: notes
+                )
+            }
+        }
         dismiss()
     }
 
