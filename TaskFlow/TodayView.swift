@@ -38,14 +38,14 @@ struct TodayView: View {
             VStack(alignment: .leading, spacing: 0) {
 
                 // MARK: - Header
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(greeting)
-                        .font(.system(size: 13))
+                        .font(.system(size: 15))
                         .foregroundStyle(.secondary)
 
                     HStack(alignment: .firstTextBaseline) {
                         Text(Date(), format: .dateTime.month(.wide).day())
-                            .font(.system(size: 28, weight: .bold))
+                            .font(.system(size: 34, weight: .bold))
                             .foregroundStyle(.primary)
 
                         Spacer()
@@ -53,9 +53,9 @@ struct TodayView: View {
                         if totalSecondsToday > 0 {
                             HStack(spacing: 4) {
                                 Image(systemName: "clock")
-                                    .font(.system(size: 12))
+                                    .font(.system(size: 14))
                                 Text(formatSeconds(totalSecondsToday))
-                                    .font(.system(size: 13, weight: .medium))
+                                    .font(.system(size: 15, weight: .medium))
                             }
                             .foregroundStyle(.secondary)
                         }
@@ -63,34 +63,34 @@ struct TodayView: View {
 
                     if totalCount > 0 {
                         Text(pendingCount == 0 ? "모든 태스크를 완료했어요 🎉" : "남은 태스크 \(pendingCount)개")
-                            .font(.system(size: 13))
+                            .font(.system(size: 15))
                             .foregroundStyle(.secondary)
                     }
                 }
                 .padding(.horizontal, 20)
-                .padding(.top, 4)
-                .padding(.bottom, 20)
+                .padding(.top, 8)
+                .padding(.bottom, 24)
 
                 // MARK: - 활성 타이머
                 if let entry = timerManager.activeEntry, let taskName = entry.task?.title {
                     HStack(spacing: 10) {
                         Circle()
                             .fill(Color.green)
-                            .frame(width: 7, height: 7)
+                            .frame(width: 8, height: 8)
                             .opacity(timerManager.displaySeconds % 2 == 0 ? 1 : 0.3)
                         Text(taskName)
-                            .font(.system(size: 14, weight: .medium))
+                            .font(.system(size: 16, weight: .medium))
                             .lineLimit(1)
                         Spacer()
                         Text(timerManager.clockString)
-                            .font(.system(size: 17, weight: .semibold, design: .monospaced))
+                            .font(.system(size: 20, weight: .semibold, design: .monospaced))
                             .foregroundStyle(.green)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(.background)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.green.opacity(0.25), lineWidth: 1))
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 14)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.green.opacity(0.2), lineWidth: 1))
                     .padding(.horizontal, 20)
                     .padding(.bottom, 16)
                 }
@@ -123,7 +123,7 @@ struct TodayView: View {
                 Spacer().frame(height: 100)
             }
         }
-        .background(Color(.systemGroupedBackground))
+        .background(.clear)
     }
 }
 
@@ -140,30 +140,31 @@ struct ProjectSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 8) {
-                Circle()
-                    .fill(projColor)
-                    .frame(width: 9, height: 9)
+                Image(systemName: "folder.fill")
+                    .font(.system(size: 13))
+                    .foregroundStyle(projColor)
                 Text(project.name)
-                    .font(.system(size: 13, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
                 Button(action: onAddTask) {
                     Image(systemName: "plus")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 8)
+            .padding(.bottom, 10)
 
             VStack(spacing: 0) {
                 ForEach(tasks) { task in
                     TaskRow(task: task, project: project, timerManager: timerManager)
                 }
             }
-            .background(Color(.systemBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.white.opacity(0.15), lineWidth: 1))
             .padding(.horizontal, 16)
         }
     }
@@ -205,9 +206,9 @@ struct TaskRow: View {
                 }
                 .buttonStyle(.plain)
 
-                VStack(alignment: .leading, spacing: 3) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text(task.title)
-                        .font(.system(size: 15))
+                        .font(.system(size: 17))
                         .foregroundStyle(task.isCompleted ? .secondary : .primary)
                         .strikethrough(task.isCompleted, color: Color.secondary.opacity(0.5))
 
@@ -215,12 +216,12 @@ struct TaskRow: View {
                         HStack(spacing: 8) {
                             if let due = task.dueDate {
                                 Label(formatDate(due), systemImage: "calendar")
-                                    .font(.system(size: 11))
+                                    .font(.system(size: 13))
                                     .foregroundStyle(isPast(due) ? .red : .secondary)
                             }
                             if task.totalSeconds > 0 {
                                 Label(task.formattedTime, systemImage: "clock")
-                                    .font(.system(size: 11))
+                                    .font(.system(size: 13))
                                     .foregroundStyle(.secondary)
                             }
                         }
@@ -242,13 +243,13 @@ struct TaskRow: View {
                             .font(.system(size: 11))
                             .foregroundStyle(isRunning ? Color.green : Color.secondary.opacity(0.5))
                             .frame(width: 32, height: 32)
-                            .background(Circle().fill(isRunning ? Color.green.opacity(0.12) : Color.secondary.opacity(0.08)))
+                            .background(Circle().fill(isRunning ? Color.green.opacity(0.15) : Color.white.opacity(0.08)))
                     }
                     .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 13)
+            .padding(.vertical, 16)
 
             if isExpanded {
                 VStack(alignment: .leading, spacing: 10) {
@@ -262,7 +263,7 @@ struct TaskRow: View {
                     .padding(.leading, 54)
                     .padding(.trailing, 16)
 
-                    Divider().padding(.leading, 54)
+                    Divider().padding(.leading, 54).opacity(0.4)
 
                     HStack(spacing: 8) {
                         Spacer().frame(width: 54)
@@ -271,11 +272,11 @@ struct TaskRow: View {
                     }
                     .padding(.bottom, 10)
                 }
-                .background(Color.secondary.opacity(0.04))
+                .background(Color.white.opacity(0.05))
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
 
-            Divider().padding(.leading, 54)
+            Divider().padding(.leading, 54).opacity(0.25)
         }
     }
 
@@ -298,6 +299,19 @@ struct DatePickerPill: View {
     @Bindable var task: Task
     @State private var showPicker = false
 
+    func setDueDate(_ date: Date) {
+        task.dueDate = date
+        try? modelContext.save()
+        showPicker = false
+        _Concurrency.Task {
+            await CalendarManager.shared.addEvent(
+                title: task.title,
+                dueDate: date,
+                notes: task.notes
+            )
+        }
+    }
+
     var body: some View {
         Button { showPicker.toggle() } label: {
             HStack(spacing: 4) {
@@ -308,16 +322,15 @@ struct DatePickerPill: View {
             .foregroundStyle(task.dueDate != nil ? Color.blue : Color.secondary)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(task.dueDate != nil ? Color.blue.opacity(0.1) : Color.secondary.opacity(0.08))
+            .background(task.dueDate != nil ? Color.blue.opacity(0.12) : Color.white.opacity(0.08))
             .clipShape(Capsule())
+            .overlay(Capsule().stroke(Color.white.opacity(0.15), lineWidth: 1))
         }
         .buttonStyle(.plain)
         .popover(isPresented: $showPicker, arrowEdge: .bottom) {
             VStack(spacing: 0) {
                 Button {
-                    task.dueDate = Calendar.current.startOfDay(for: Date())
-                    try? modelContext.save()
-                    showPicker = false
+                    setDueDate(Calendar.current.startOfDay(for: Date()))
                 } label: {
                     HStack { Text("⭐️"); Text("오늘").font(.system(size: 14)); Spacer() }
                         .padding(.horizontal, 16).padding(.vertical, 10)
@@ -326,7 +339,7 @@ struct DatePickerPill: View {
                 Divider()
                 DatePicker("", selection: Binding(
                     get: { task.dueDate ?? Date() },
-                    set: { task.dueDate = $0; try? modelContext.save(); showPicker = false }
+                    set: { setDueDate($0) }
                 ), displayedComponents: .date)
                 .datePickerStyle(.graphical)
                 .environment(\.locale, Locale(identifier: "ko_KR"))
@@ -372,8 +385,9 @@ struct SummaryCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(.background)
+        .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 13))
+        .overlay(RoundedRectangle(cornerRadius: 13).stroke(Color.white.opacity(0.15), lineWidth: 1))
     }
 }
 

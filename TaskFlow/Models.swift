@@ -32,6 +32,9 @@ class Project {
     var area: Area?
     var tasks: [Task]
 
+    var midtermDate: Date?
+    var finalDate: Date?
+
     init(name: String, colorHex: String = "007AFF", area: Area? = nil, order: Int = 0) {
         self.id = UUID()
         self.name = name
@@ -108,6 +111,39 @@ class TimeEntry {
     }
 
     var isRunning: Bool { endedAt == nil }
+}
+
+// MARK: - SchoolEvent (주요 행사)
+@Model
+class SchoolEvent {
+    var id: UUID
+    var title: String
+    var date: Date
+    var type: String   // "midterm" | "final" | "custom"
+    var area: Area?
+
+    init(title: String, date: Date, type: String = "custom", area: Area? = nil) {
+        self.id = UUID()
+        self.title = title
+        self.date = date
+        self.type = type
+        self.area = area
+    }
+
+    var icon: String {
+        switch type {
+        case "midterm": return "doc.text.fill"
+        case "final":   return "checkmark.seal.fill"
+        default:        return "star.fill"
+        }
+    }
+
+    var dDay: String {
+        let days = Calendar.current.dateComponents([.day], from: Calendar.current.startOfDay(for: Date()), to: Calendar.current.startOfDay(for: date)).day ?? 0
+        if days == 0 { return "D-Day" }
+        if days > 0  { return "D-\(days)" }
+        return "D+\(-days)"
+    }
 }
 
 // MARK: - StudyPlan (학습 계획)

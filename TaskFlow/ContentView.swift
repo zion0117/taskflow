@@ -138,7 +138,7 @@ struct ThingsSidebar: View {
                 Section {
                     // Area 행
                     HStack(spacing: 8) {
-                        Image(systemName: "hexagon")
+                        Image(systemName: "tray.2")
                             .font(.system(size: 13))
                             .foregroundStyle(.secondary)
                         Text(area.name)
@@ -159,9 +159,9 @@ struct ThingsSidebar: View {
                     // 하위 프로젝트
                     ForEach(area.projects.sorted { $0.order < $1.order }) { project in
                         HStack(spacing: 8) {
-                            Circle()
-                                .fill(Color(hex: project.colorHex) ?? .blue)
-                                .frame(width: 8, height: 8)
+                            Image(systemName: "folder.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color(hex: project.colorHex) ?? .blue)
                                 .padding(.leading, 8)
                             Text(project.name)
                                 .font(.system(size: 13))
@@ -184,9 +184,9 @@ struct ThingsSidebar: View {
                 Section("프로젝트") {
                     ForEach(looseProjects) { project in
                         HStack(spacing: 8) {
-                            Circle()
-                                .fill(Color(hex: project.colorHex) ?? .blue)
-                                .frame(width: 8, height: 8)
+                            Image(systemName: "folder.fill")
+                                .font(.system(size: 11))
+                                .foregroundStyle(Color(hex: project.colorHex) ?? .blue)
                             Text(project.name).font(.system(size: 13)).lineLimit(1)
                             Spacer()
                             let pending = project.pendingCount
@@ -229,6 +229,13 @@ struct AreaDetailView: View {
     @Bindable var area: Area
     var timerManager: TimerManager
     @State private var showAddProject = false
+    @Query private var allEvents: [SchoolEvent]
+
+    var areaEvents: [SchoolEvent] {
+        allEvents.filter { $0.area?.id == area.id }.sorted { $0.date < $1.date }
+    }
+
+    var isSchoolArea: Bool { area.name == "학교" }
 
     var body: some View {
         ScrollView {
@@ -236,20 +243,12 @@ struct AreaDetailView: View {
                 // 헤더
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 10) {
-                        Image(systemName: "hexagon.fill")
+                        Image(systemName: "tray.2.fill")
                             .font(.system(size: 24))
                             .foregroundStyle(.secondary)
                         Text(area.name)
                             .font(.system(size: 26, weight: .bold))
                     }
-                    // Notes
-                    TextField("Notes", text: Binding(
-                        get: { "" },
-                        set: { _ in }
-                    ), axis: .vertical)
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-                    .textFieldStyle(.plain)
                 }
                 .padding(.horizontal, 32)
                 .padding(.top, 28)
@@ -257,7 +256,27 @@ struct AreaDetailView: View {
 
                 Divider().padding(.horizontal, 32)
 
+                // ── 주요 행사 섹션 (학교 Area 전용)
+                if isSchoolArea {
+                    SchoolEventsSection(area: area, events: areaEvents)
+                        .padding(.top, 8)
+
+                    Divider().padding(.horizontal, 32).padding(.top, 4)
+                }
+
                 // 하위 프로젝트 목록
+                if !area.projects.isEmpty {
+                    HStack {
+                        Text("프로젝트")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 32)
+                    .padding(.top, 20)
+                    .padding(.bottom, 6)
+                }
+
                 ForEach(area.projects.sorted { $0.order < $1.order }) { project in
                     HStack(spacing: 12) {
                         Circle()
@@ -282,9 +301,7 @@ struct AreaDetailView: View {
         .safeAreaInset(edge: .bottom) {
             HStack {
                 Spacer()
-                Button {
-                    showAddProject = true
-                } label: {
+                Button { showAddProject = true } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "plus").font(.system(size: 13, weight: .medium))
                         Text("새 프로젝트").font(.system(size: 13))
@@ -303,6 +320,348 @@ struct AreaDetailView: View {
     }
 }
 
+// MARK: - 주요 행사 섹션
+struct SchoolEventsSection: View {
+    @Environment(\.modelContext) private var modelContext
+    var area: Area
+    var events: [SchoolEvent]
+    @State private var showAddEvent = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            // 섹션 헤더
+            HStack {
+                Text("주요 행사")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button { showAddEvent = true } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 32)
+            .padding(.top, 16)
+            .padding(.bottom, 8)
+
+            ForEach(events) { event in
+                SchoolEventRow(event: event)
+            }
+
+            if events.isEmpty {
+                Text("행사를 추가해주세요")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.tertiary)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 10)
+            }
+        }
+        .sheet(isPresented: $showAddEvent) {
+            AddSchoolEventSheet(area: area)
+        }
+    }
+}
+
+// MARK: - 행사 행
+struct SchoolEventRow: View {
+    @Environment(\.modelContext) private var modelContext
+    @Bindable var event: SchoolEvent
+    @State private var showDatePicker = false
+
+    var typeColor: Color {
+        switch event.type {
+        case "midterm": return .orange
+        case "final":   return .red
+        default:        return .blue
+        }
+    }
+
+    var body: some View {
+        HStack(spacing: 14) {
+            // 아이콘
+            Image(systemName: event.icon)
+                .font(.system(size: 13))
+                .foregroundStyle(typeColor)
+                .frame(width: 28)
+
+            // 제목
+            Text(event.title)
+                .font(.system(size: 14))
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            // D-Day 뱃지
+            Text(event.dDay)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(event.dDay == "D-Day" ? .white : typeColor)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
+                .background(event.dDay == "D-Day" ? typeColor : typeColor.opacity(0.12))
+                .clipShape(Capsule())
+
+            // 날짜
+            Button {
+                showDatePicker.toggle()
+            } label: {
+                Text(formatDate(event.date))
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+            .popover(isPresented: $showDatePicker, arrowEdge: .trailing) {
+                DatePicker("", selection: Binding(
+                    get: { event.date },
+                    set: { event.date = $0; try? modelContext.save(); showDatePicker = false }
+                ), displayedComponents: .date)
+                .datePickerStyle(.graphical)
+                .environment(\.locale, Locale(identifier: "ko_KR"))
+                .frame(width: 280)
+                .padding(8)
+            }
+        }
+        .padding(.horizontal, 32)
+        .padding(.vertical, 10)
+        .overlay(alignment: .bottom) { Divider().padding(.leading, 32) }
+    }
+
+    func formatDate(_ d: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ko_KR")
+        f.dateFormat = "M월 d일 (E)"
+        return f.string(from: d)
+    }
+}
+
+// MARK: - 행사 추가 시트
+struct AddSchoolEventSheet: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    var area: Area
+
+    @State private var title = ""
+    @State private var date = Date()
+    @State private var type = "custom"
+
+    let presets = [
+        ("중간고사", "midterm"),
+        ("기말고사", "final"),
+        ("수행평가", "custom"),
+        ("현장학습", "custom"),
+        ("학교 행사", "custom"),
+    ]
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("행사명") {
+                    TextField("행사 이름", text: $title)
+
+                    // 빠른 선택
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(presets, id: \.0) { name, t in
+                                Button {
+                                    title = name
+                                    type = t
+                                } label: {
+                                    Text(name)
+                                        .font(.system(size: 13))
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 6)
+                                        .background(title == name ? Color.blue.opacity(0.15) : Color.secondary.opacity(0.1))
+                                        .clipShape(Capsule())
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+
+                Section("날짜") {
+                    DatePicker("날짜 선택", selection: $date, displayedComponents: .date)
+                        .environment(\.locale, Locale(identifier: "ko_KR"))
+                }
+
+                Section("종류") {
+                    Picker("종류", selection: $type) {
+                        Text("중간고사").tag("midterm")
+                        Text("기말고사").tag("final")
+                        Text("기타").tag("custom")
+                    }
+                    .pickerStyle(.segmented)
+                }
+            }
+            .navigationTitle("행사 추가")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("취소") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("추가") { submit() }
+                        .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+        }
+    }
+
+    func submit() {
+        let event = SchoolEvent(title: title, date: date, type: type, area: area)
+        modelContext.insert(event)
+        try? modelContext.save()
+        dismiss()
+    }
+}
+
+// MARK: - 시험일 섹션
+struct ExamDatesSection: View {
+    @Environment(\.modelContext) private var modelContext
+    @Bindable var project: Project
+    var projColor: Color
+
+    @State private var showMidtermPicker = false
+    @State private var showFinalPicker = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("시험일")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 32)
+                .padding(.top, 16)
+                .padding(.bottom, 8)
+
+            // 중간고사
+            ExamDateRow(
+                label: "중간고사",
+                icon: "doc.text.fill",
+                color: .orange,
+                date: project.midtermDate,
+                showPicker: $showMidtermPicker
+            ) { newDate in
+                project.midtermDate = newDate
+                try? modelContext.save()
+            } onClear: {
+                project.midtermDate = nil
+                try? modelContext.save()
+            }
+
+            Divider().padding(.leading, 32)
+
+            // 기말고사
+            ExamDateRow(
+                label: "기말고사",
+                icon: "checkmark.seal.fill",
+                color: .red,
+                date: project.finalDate,
+                showPicker: $showFinalPicker
+            ) { newDate in
+                project.finalDate = newDate
+                try? modelContext.save()
+            } onClear: {
+                project.finalDate = nil
+                try? modelContext.save()
+            }
+        }
+        .padding(.bottom, 4)
+    }
+}
+
+struct ExamDateRow: View {
+    var label: String
+    var icon: String
+    var color: Color
+    var date: Date?
+    @Binding var showPicker: Bool
+    var onSet: (Date) -> Void
+    var onClear: () -> Void
+
+    var dDay: String? {
+        guard let date else { return nil }
+        let days = Calendar.current.dateComponents([.day],
+            from: Calendar.current.startOfDay(for: Date()),
+            to: Calendar.current.startOfDay(for: date)).day ?? 0
+        if days == 0 { return "D-Day" }
+        if days > 0  { return "D-\(days)" }
+        return "D+\(-days)"
+    }
+
+    var body: some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 13))
+                .foregroundStyle(color)
+                .frame(width: 28)
+
+            Text(label)
+                .font(.system(size: 14))
+
+            Spacer()
+
+            // D-Day 뱃지
+            if let dDay {
+                Text(dDay)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(dDay == "D-Day" ? .white : color)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(dDay == "D-Day" ? color : color.opacity(0.12))
+                    .clipShape(Capsule())
+            }
+
+            // 날짜 버튼
+            Button {
+                showPicker.toggle()
+            } label: {
+                Text(date.map { formatDate($0) } ?? "날짜 미정")
+                    .font(.system(size: 12))
+                    .foregroundStyle(date != nil ? .primary : .secondary)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
+                    .background(Color.secondary.opacity(0.08))
+                    .clipShape(Capsule())
+            }
+            .buttonStyle(.plain)
+            .popover(isPresented: $showPicker, arrowEdge: .trailing) {
+                VStack(spacing: 0) {
+                    DatePicker("", selection: Binding(
+                        get: { date ?? Date() },
+                        set: { onSet($0); showPicker = false }
+                    ), displayedComponents: .date)
+                    .datePickerStyle(.graphical)
+                    .environment(\.locale, Locale(identifier: "ko_KR"))
+                    .frame(width: 280)
+                    .padding(8)
+
+                    if date != nil {
+                        Divider()
+                        Button {
+                            onClear(); showPicker = false
+                        } label: {
+                            Text("날짜 삭제")
+                                .font(.system(size: 13))
+                                .foregroundStyle(.red)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 32)
+        .padding(.vertical, 10)
+    }
+
+    func formatDate(_ d: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ko_KR")
+        f.dateFormat = "M월 d일 (E)"
+        return f.string(from: d)
+    }
+}
+
 // MARK: - Project Detail
 struct ProjectDetailView: View {
     @Environment(\.modelContext) private var modelContext
@@ -316,6 +675,7 @@ struct ProjectDetailView: View {
     var pendingTasks: [Task] { project.tasks.filter { !$0.isCompleted } }
     var completedTasks: [Task] { project.tasks.filter { $0.isCompleted } }
     var projColor: Color { Color(hex: project.colorHex) ?? .blue }
+    var isSchoolProject: Bool { project.area?.name == "학교" }
 
     var body: some View {
         ScrollView {
@@ -324,7 +684,9 @@ struct ProjectDetailView: View {
                 // 프로젝트 헤더
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 10) {
-                        Circle().fill(projColor).frame(width: 14, height: 14)
+                        Image(systemName: "folder.fill")
+                            .font(.system(size: 20))
+                            .foregroundStyle(projColor)
                         Text(project.name)
                             .font(.system(size: 26, weight: .bold))
                     }
@@ -343,6 +705,12 @@ struct ProjectDetailView: View {
                 .padding(.bottom, 20)
 
                 Divider().padding(.horizontal, 32)
+
+                // 시험일 섹션 (학교 소속 프로젝트만)
+                if isSchoolProject {
+                    ExamDatesSection(project: project, projColor: projColor)
+                    Divider().padding(.horizontal, 32)
+                }
 
                 // 태스크 목록
                 VStack(spacing: 0) {
@@ -489,24 +857,24 @@ struct ThingsTaskRow: View {
                 .buttonStyle(.plain)
 
                 // 제목 + 서브텍스트 — 클릭하면 펼치기
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 3) {
                     Text(task.title)
-                        .font(.system(size: 14))
+                        .font(.system(size: 15))
                         .foregroundStyle(task.isCompleted ? Color.secondary : Color.primary)
                         .strikethrough(task.isCompleted, color: Color.secondary.opacity(0.5))
 
                     HStack(spacing: 8) {
                         if let due = task.dueDate {
                             HStack(spacing: 3) {
-                                Image(systemName: "calendar").font(.system(size: 10))
-                                Text(formatDate(due)).font(.system(size: 11))
+                                Image(systemName: "calendar").font(.system(size: 12))
+                                Text(formatDate(due)).font(.system(size: 12))
                             }
                             .foregroundStyle(.secondary)
                         }
                         if task.totalSeconds > 0 {
                             HStack(spacing: 3) {
-                                Image(systemName: "clock").font(.system(size: 10))
-                                Text(task.formattedTime).font(.system(size: 11))
+                                Image(systemName: "clock").font(.system(size: 12))
+                                Text(task.formattedTime).font(.system(size: 12))
                             }
                             .foregroundStyle(.secondary)
                         }
@@ -534,7 +902,7 @@ struct ThingsTaskRow: View {
                 }
             }
             .padding(.horizontal, 32)
-            .padding(.vertical, 9)
+            .padding(.vertical, 13)
 
             // 선택 시 인라인 상세 — Things 3 스타일
             if isSelected {

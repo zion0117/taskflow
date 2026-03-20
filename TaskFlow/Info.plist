@@ -6,5 +6,7 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>태스크 마감일을 Apple Calendar에 자동으로 추가합니다.</string>
 </dict>
 </plist>
