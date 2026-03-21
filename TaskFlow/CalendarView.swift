@@ -3,12 +3,12 @@ import SwiftData
 
 struct CalendarView: View {
     @Query private var projects: [Project]
+    @Query private var allTasks: [Task]   // 프로젝트 없는 태스크 포함
     @State private var selectedDate = Date()
     @State private var displayMonth = Date()
     @State private var showAddTask = false
 
     var calendar: Calendar { Calendar.current }
-    var allTasks: [Task] { projects.flatMap { $0.tasks } }
 
     func tasksForDate(_ date: Date) -> [Task] {
         allTasks.filter { task in
@@ -18,9 +18,9 @@ struct CalendarView: View {
     }
 
     func dotColors(on date: Date) -> [Color] {
-        tasksForDate(date).compactMap { task in
-            guard let proj = task.project else { return nil }
-            return Color(hex: proj.colorHex)
+        tasksForDate(date).map { task in
+            if let proj = task.project, let c = Color(hex: proj.colorHex) { return c }
+            return Color.gray
         }
     }
 
@@ -29,6 +29,7 @@ struct CalendarView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
+                // 월 네비게이션
                 HStack {
                     Button {
                         displayMonth = calendar.date(byAdding: .month, value: -1, to: displayMonth)!
@@ -54,6 +55,7 @@ struct CalendarView: View {
                 .padding(.horizontal, 20)
                 .padding(.top, 8)
 
+                // 달력 그리드
                 VStack(spacing: 0) {
                     HStack(spacing: 0) {
                         ForEach(["일","월","화","수","목","금","토"], id: \.self) { d in
@@ -85,6 +87,7 @@ struct CalendarView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 14))
                 .padding(.horizontal, 20)
 
+                // 선택 날짜 태스크 목록
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
                         Text(selectedDateLabel)
@@ -124,7 +127,7 @@ struct CalendarView: View {
         .background(Color.secondary.opacity(0.1))
         .sheet(isPresented: $showAddTask) {
             CalendarAddTaskSheet(date: selectedDate, projects: projects)
-                .presentationDetents([.medium])
+                .presentationDetents([.height(340)])
         }
     }
 
@@ -193,7 +196,8 @@ struct DayCell: View {
 }
 
 struct CalendarTaskRow: View {
-    var task: Task
+    @Environment(\.modelContext) private var modelContext
+    @Bindable var task: Task
 
     var projColor: Color {
         guard let proj = task.project else { return .gray }
@@ -202,7 +206,24 @@ struct CalendarTaskRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 2).fill(projColor).frame(width: 4, height: 36)
+            Button {
+                task.isCompleted.toggle()
+                try? modelContext.save()
+            } label: {
+                ZStack {
+                    Circle()
+                        .strokeBorder(projColor.opacity(0.6), lineWidth: 1.5)
+                        .frame(width: 20, height: 20)
+                    if task.isCompleted {
+                        Circle().fill(projColor).frame(width: 20, height: 20)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+                }
+            }
+            .buttonStyle(.plain)
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(task.title)
                     .font(.system(size: 14))
@@ -219,11 +240,11 @@ struct CalendarTaskRow: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .overlay(alignment: .bottom) { Divider().padding(.leading, 36) }
+        .overlay(alignment: .bottom) { Divider().padding(.leading, 52) }
     }
 }
 
-// MARK: - 캘린더에서 할일 추가
+// MARK: - 할일 추가 시트
 struct CalendarAddTaskSheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -236,65 +257,141 @@ struct CalendarAddTaskSheet: View {
     @State private var selectedProject: Project? = nil
 
     var sortedProjects: [Project] { projects.sorted { $0.name < $1.name } }
+    var canSubmit: Bool { !title.trimmingCharacters(in: .whitespaces).isEmpty }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section("할일") {
-                    TextField("제목 입력", text: $title)
-                        .focused($focused)
+        VStack(spacing: 0) {
+            // 핸들
+            RoundedRectangle(cornerRadius: 3)
+                .fill(Color.secondary.opacity(0.3))
+                .frame(width: 36, height: 5)
+                .padding(.top, 10)
+                .padding(.bottom, 14)
+
+            // 제목 입력
+            HStack(spacing: 10) {
+                ZStack {
+                    Circle()
+                        .strokeBorder(
+                            selectedProject.flatMap { Color(hex: $0.colorHex) } ?? Color.secondary.opacity(0.4),
+                            lineWidth: 1.5
+                        )
+                        .frame(width: 22, height: 22)
                 }
 
-                Section("프로젝트") {
-                    if sortedProjects.isEmpty {
-                        Text("프로젝트 없음").foregroundStyle(.secondary)
-                    } else {
-                        ForEach(sortedProjects) { project in
-                            Button {
-                                selectedProject = project
-                            } label: {
-                                HStack {
-                                    Circle()
-                                        .fill(Color(hex: project.colorHex) ?? .blue)
-                                        .frame(width: 10, height: 10)
-                                    Text(project.name)
-                                        .foregroundStyle(.primary)
-                                    Spacer()
-                                    if selectedProject?.id == project.id {
-                                        Image(systemName: "checkmark")
-                                            .foregroundStyle(.blue)
-                                    }
-                                }
-                            }
-                            .buttonStyle(.plain)
+                TextField("제목 입력", text: $title)
+                    .focused($focused)
+                    .font(.system(size: 17))
+                    .onSubmit { if canSubmit { submit() } }
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 16)
+
+            Divider()
+
+            // 프로젝트 선택
+            HStack(spacing: 10) {
+                Image(systemName: "folder")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 22)
+
+                Menu {
+                    Button {
+                        selectedProject = nil
+                    } label: {
+                        HStack {
+                            Text("없음")
+                            if selectedProject == nil { Image(systemName: "checkmark") }
                         }
                     }
-                }
-
-                Section {
-                    HStack {
-                        Image(systemName: "calendar")
-                            .foregroundStyle(.secondary)
-                        Text(dateLabel(date))
+                    if !sortedProjects.isEmpty { Divider() }
+                    ForEach(sortedProjects) { project in
+                        Button {
+                            selectedProject = project
+                        } label: {
+                            HStack {
+                                Text(project.name)
+                                if selectedProject?.id == project.id { Image(systemName: "checkmark") }
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        if let p = selectedProject {
+                            Circle()
+                                .fill(Color(hex: p.colorHex) ?? .blue)
+                                .frame(width: 8, height: 8)
+                            Text(p.name)
+                                .font(.system(size: 14))
+                                .foregroundStyle(.primary)
+                        } else {
+                            Text("프로젝트 선택")
+                                .font(.system(size: 14))
+                                .foregroundStyle(.secondary)
+                        }
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 10))
                             .foregroundStyle(.secondary)
                     }
-                } header: { Text("마감일") }
-            }
-            .navigationTitle("할일 추가")
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("취소") { dismiss() }
                 }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("추가") { submit() }
-                        .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
+                .buttonStyle(.plain)
+
+                Spacer()
             }
-            .onAppear { focused = true }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+
+            Divider()
+
+            // 날짜
+            HStack(spacing: 10) {
+                Image(systemName: "calendar")
+                    .font(.system(size: 13))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 22)
+                Text(dateLabel(date))
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+
+            Divider()
+
+            Spacer()
+
+            // 버튼
+            HStack(spacing: 10) {
+                Button { dismiss() } label: {
+                    Text("취소")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 13)
+                        .background(Color.secondary.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+
+                Button { submit() } label: {
+                    Text("추가")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(canSubmit ? .white : .secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 13)
+                        .background(canSubmit ? Color.blue : Color.secondary.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+                .disabled(!canSubmit)
+            }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
         }
+        .background(.background)
+        .onAppear { focused = true }
     }
 
     func submit() {
@@ -303,7 +400,9 @@ struct CalendarAddTaskSheet: View {
         let task = Task(title: trimmed, project: selectedProject)
         task.dueDate = date
         modelContext.insert(task)
-        selectedProject?.tasks.append(task)
+        if let p = selectedProject {
+            p.tasks.append(task)
+        }
         try? modelContext.save()
         dismiss()
     }
