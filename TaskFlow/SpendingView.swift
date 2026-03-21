@@ -1125,25 +1125,43 @@ struct AddTransactionSheet: View {
                 // MARK: 분류
                 infoRow(label: type == "expense" ? "지출 분류" : "수입 분류") {
                     let catColor = Color(hex: Transaction.categoryColor[category] ?? "9CA3AF") ?? .secondary
-                    Menu {
-                        ForEach(categories, id: \.self) { cat in
-                            Button { withAnimation { category = cat } } label: {
-                                Label(cat, systemImage: Transaction.categoryIcon[cat] ?? "tag")
+                    HStack(spacing: 8) {
+                        Menu {
+                            ForEach(categories, id: \.self) { cat in
+                                Button { withAnimation { category = cat } } label: {
+                                    Label(cat, systemImage: Transaction.categoryIcon[cat] ?? "tag")
+                                }
                             }
+                        } label: {
+                            HStack(spacing: 5) {
+                                Circle().fill(catColor).frame(width: 8, height: 8)
+                                Text(category)
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(.primary)
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.horizontal, 10).padding(.vertical, 5)
+                            .background(Color.secondary.opacity(0.1))
+                            .clipShape(RoundedRectangle(cornerRadius: 7))
+                            .overlay(RoundedRectangle(cornerRadius: 7).stroke(Color.secondary.opacity(0.25), lineWidth: 1))
                         }
-                    } label: {
-                        HStack(spacing: 5) {
-                            Circle().fill(catColor).frame(width: 8, height: 8)
-                            Text(category)
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundStyle(.primary)
+                        .buttonStyle(.plain)
+
+                        Button { showManageCategories = true } label: {
+                            Image(systemName: "plus.circle")
+                                .font(.system(size: 18))
+                                .foregroundStyle(.secondary)
                         }
-                        .padding(.horizontal, 10).padding(.vertical, 5)
-                        .background(Color.secondary.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 7))
-                        .overlay(RoundedRectangle(cornerRadius: 7).stroke(Color.secondary.opacity(0.25), lineWidth: 1))
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
+                }
+                .sheet(isPresented: $showManageCategories, onDismiss: {
+                    customExpenseCategories = UserDefaults.standard.stringArray(forKey: "customExpenseCategories") ?? []
+                    customIncomeCategories  = UserDefaults.standard.stringArray(forKey: "customIncomeCategories")  ?? []
+                }) {
+                    ManageCategoriesSheet()
                 }
 
                 Divider().padding(.horizontal, 16)
