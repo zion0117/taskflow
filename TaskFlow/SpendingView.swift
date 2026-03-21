@@ -1160,6 +1160,53 @@ struct AddTransactionSheet: View {
                         }
                     }
                     Divider().padding(.horizontal, 16)
+
+                    // MARK: 구매처
+                    infoRow(label: "구매처") {
+                        Menu {
+                            Button { withAnimation { store = "" } } label: {
+                                Label("없음", systemImage: "xmark")
+                            }
+                            Divider()
+                            ForEach(Transaction.stores.filter { $0 != "직접입력" }, id: \.self) { s in
+                                Button { withAnimation { store = s } } label: {
+                                    Label(s, systemImage: Transaction.storeIcon[s] ?? "bag")
+                                }
+                            }
+                            Divider()
+                            Button { withAnimation { store = "직접입력" } } label: {
+                                Label("직접입력", systemImage: "pencil")
+                            }
+                        } label: {
+                            HStack(spacing: 5) {
+                                if store.isEmpty {
+                                    Text("선택 안 함")
+                                        .font(.system(size: 13))
+                                        .foregroundStyle(.secondary)
+                                } else {
+                                    Image(systemName: Transaction.storeIcon[store] ?? "bag")
+                                        .font(.system(size: 11))
+                                    Text(store == "직접입력" ? (customStore.isEmpty ? "직접입력" : customStore) : store)
+                                        .font(.system(size: 13, weight: .medium))
+                                        .foregroundStyle(.primary)
+                                }
+                            }
+                            .padding(.horizontal, 10).padding(.vertical, 5)
+                            .background(Color.secondary.opacity(0.1))
+                            .clipShape(RoundedRectangle(cornerRadius: 7))
+                            .overlay(RoundedRectangle(cornerRadius: 7).stroke(Color.secondary.opacity(0.25), lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                    }
+
+                    if store == "직접입력" {
+                        TextField("구매처 직접 입력", text: $customStore)
+                            .font(.system(size: 14))
+                            .padding(.horizontal, 14).padding(.vertical, 10)
+                            .padding(.horizontal, 16)
+                    }
+
+                    Divider().padding(.horizontal, 16)
                 }
 
                 // MARK: 날짜
