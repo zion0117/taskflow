@@ -1327,17 +1327,10 @@ struct AddTransactionSheet: View {
         memo = t.memo
         date = t.date
         isPlanned = t.isPlanned
-        let s = t.store
-        if !s.isEmpty && !Transaction.stores.contains(s) {
-            store = "직접입력"; customStore = s
-        } else {
-            store = s
-        }
+        store = t.store
     }
 
-    var resolvedStore: String {
-        store == "직접입력" ? customStore : store
-    }
+    var resolvedStore: String { store }
 
     func submit() {
         let amount = Int(amountText.replacingOccurrences(of: ",", with: "")) ?? 0
