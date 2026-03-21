@@ -341,9 +341,7 @@ struct CalDayCell: View {
     }
 
     func compact(_ p: Int) -> String {
-        let f = NumberFormatter(); f.numberStyle = .decimal
-        if p >= 100_000 { return "\(p / 10_000)만" }
-        return f.string(from: NSNumber(value: p)) ?? "\(p)"
+        return "\(p)"
     }
 }
 
@@ -2254,6 +2252,97 @@ struct ManageStoresSheet: View {
                 } header: { Text("기본 판매처") }
             }
             .navigationTitle("판매처 관리")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("완료") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+}
+
+// MARK: - 카테고리 관리 시트
+struct ManageCategoriesSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedType = "expense"
+    @State private var customExpense: [String] = UserDefaults.standard.stringArray(forKey: "customExpenseCategories") ?? []
+    @State private var customIncome:  [String] = UserDefaults.standard.stringArray(forKey: "customIncomeCategories")  ?? []
+    @State private var newName = ""
+
+    var customList: [String] { selectedType == "expense" ? customExpense : customIncome }
+    var defaultList: [String] { selectedType == "expense" ? Transaction.expenseCategories : Transaction.incomeCategories }
+
+    var body: some View {
+        NavigationStack {
+            List {
+                // 타입 선택
+                Section {
+                    Picker("", selection: $selectedType) {
+                        Text("지출").tag("expense")
+                        Text("수입").tag("income")
+                    }
+                    .pickerStyle(.segmented)
+                    .listRowBackground(Color.clear)
+                }
+
+                // 추가
+                Section {
+                    HStack {
+                        TextField("카테고리 이름", text: $newName)
+                        Button {
+                            let name = newName.trimmingCharacters(in: .whitespaces)
+                            guard !name.isEmpty,
+                                  !customList.contains(name),
+                                  !defaultList.contains(name) else { return }
+                            if selectedType == "expense" {
+                                customExpense.append(name)
+                                UserDefaults.standard.set(customExpense, forKey: "customExpenseCategories")
+                            } else {
+                                customIncome.append(name)
+                                UserDefaults.standard.set(customIncome, forKey: "customIncomeCategories")
+                            }
+                            newName = ""
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundStyle(.blue)
+                                .font(.system(size: 20))
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                } header: { Text("새 카테고리 추가") }
+
+                // 내가 추가한 것
+                if !customList.isEmpty {
+                    Section {
+                        ForEach(customList, id: \.self) { cat in
+                            Label(cat, systemImage: "tag")
+                        }
+                        .onDelete { idxs in
+                            if selectedType == "expense" {
+                                customExpense.remove(atOffsets: idxs)
+                                UserDefaults.standard.set(customExpense, forKey: "customExpenseCategories")
+                            } else {
+                                customIncome.remove(atOffsets: idxs)
+                                UserDefaults.standard.set(customIncome, forKey: "customIncomeCategories")
+                            }
+                        }
+                    } header: { Text("내가 추가한 카테고리") }
+                }
+
+                // 기본 카테고리
+                Section {
+                    ForEach(defaultList, id: \.self) { cat in
+                        Label(cat, systemImage: Transaction.categoryIcon[cat] ?? "tag")
+                            .foregroundStyle(.secondary)
+                    }
+                } header: { Text("기본 카테고리") }
+            }
+            .navigationTitle("카테고리 관리")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
