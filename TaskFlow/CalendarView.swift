@@ -86,11 +86,22 @@ struct CalendarView: View {
                 .padding(.horizontal, 20)
 
                 VStack(alignment: .leading, spacing: 0) {
-                    Text(selectedDateLabel)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
+                    HStack {
+                        Text(selectedDateLabel)
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        Button {
+                            showAddTask = true
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 22))
+                                .foregroundStyle(.blue)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
 
                     if tasksForSelected.isEmpty {
                         Text("태스크 없음")
