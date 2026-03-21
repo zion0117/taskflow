@@ -33,6 +33,8 @@ struct TodayView: View {
         }
     }
 
+    @State private var showAddTaskNoProject = false
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -59,6 +61,15 @@ struct TodayView: View {
                             }
                             .foregroundStyle(.secondary)
                         }
+
+                        Button {
+                            showAddTaskNoProject = true
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 22))
+                                .foregroundStyle(.blue)
+                        }
+                        .buttonStyle(.plain)
                     }
 
                     if totalCount > 0 {
