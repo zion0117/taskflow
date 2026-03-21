@@ -73,6 +73,7 @@ struct MacContentView: View {
     var timerManager: TimerManager
 
     @State private var selection: SidebarItem? = .today
+    @State private var sidebarTapCount = 0
     @State private var showAddArea = false
     @State private var showAddProject: Area? = nil
 
@@ -81,7 +82,11 @@ struct MacContentView: View {
             ThingsSidebar(
                 selection: $selection,
                 showAddArea: $showAddArea,
-                showAddProject: $showAddProject
+                showAddProject: $showAddProject,
+                onTap: { item in
+                    selection = item
+                    sidebarTapCount += 1
+                }
             )
         } detail: {
             Group {
@@ -113,6 +118,7 @@ struct MacContentView: View {
                     TodayView(timerManager: timerManager, showAddTask: .constant(nil))
                 }
             }
+            .id(sidebarTapCount)
         }
         .onAppear { timerManager.setup(context: modelContext) }
         .navigationSplitViewStyle(.balanced)
