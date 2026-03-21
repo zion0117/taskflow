@@ -415,3 +415,57 @@ class StudySession {
 
     var label: String { "\(units)\(unitType)" }
 }
+
+// MARK: - NoteDocument (노트 문서)
+@Model
+class NoteDocument {
+    var id: UUID
+    var title: String
+    var type: String          // "spreadsheet" | "mindmap"
+    var createdAt: Date
+    var updatedAt: Date
+    @Relationship(deleteRule: .cascade) var cells: [SpreadsheetCell] = []
+    @Relationship(deleteRule: .cascade) var mapNodes: [MindMapNode] = []
+
+    init(title: String, type: String) {
+        self.id = UUID()
+        self.title = title
+        self.type = type
+        self.createdAt = Date()
+        self.updatedAt = Date()
+    }
+}
+
+// MARK: - SpreadsheetCell (스프레드시트 셀)
+@Model
+class SpreadsheetCell {
+    var row: Int
+    var col: Int
+    var content: String
+    var document: NoteDocument?
+
+    init(row: Int, col: Int, content: String = "") {
+        self.row = row
+        self.col = col
+        self.content = content
+    }
+}
+
+// MARK: - MindMapNode (마인드맵 노드)
+@Model
+class MindMapNode {
+    var id: UUID
+    var text: String
+    var x: Double
+    var y: Double
+    var parentNodeId: UUID?
+    var document: NoteDocument?
+
+    init(text: String, x: Double, y: Double, parentNodeId: UUID? = nil) {
+        self.id = UUID()
+        self.text = text
+        self.x = x
+        self.y = y
+        self.parentNodeId = parentNodeId
+    }
+}
