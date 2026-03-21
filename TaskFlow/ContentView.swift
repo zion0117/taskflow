@@ -98,6 +98,8 @@ struct MacContentView: View {
                     SpendingView()
                 case .wishlist:
                     WishlistView()
+                case .notes:
+                    NotesView()
                 case .project(let id):
                     if let project = projects.first(where: { $0.id == id }) {
                         ProjectDetailView(project: project, timerManager: timerManager)
