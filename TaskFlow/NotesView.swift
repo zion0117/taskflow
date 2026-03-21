@@ -69,7 +69,9 @@ struct NotesView: View {
                     }
                 }
                 .navigationTitle("새 노트")
+                #if os(iOS)
                 .navigationBarTitleDisplayMode(.inline)
+                #endif
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("취소") { showingAdd = false; newTitle = "" }
@@ -134,7 +136,9 @@ struct SpreadsheetEditorView: View {
             }
         }
         .navigationTitle(document.title)
-        .navigationBarTitleDisplayMode(.inline)
+        #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
         .onAppear { loadGrid() }
     }
 
@@ -298,7 +302,9 @@ struct MindMapEditorView: View {
             .clipped()
         }
         .navigationTitle(document.title)
-        .navigationBarTitleDisplayMode(.inline)
+        #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
         .toolbar { toolbarContent }
         .sheet(isPresented: Binding(
             get: { editingId != nil },
@@ -351,7 +357,9 @@ struct MindMapEditorView: View {
                 TextField("노드 텍스트", text: $editText)
             }
             .navigationTitle("노드 편집")
-            .navigationBarTitleDisplayMode(.inline)
+            #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("취소") { editingId = nil }
