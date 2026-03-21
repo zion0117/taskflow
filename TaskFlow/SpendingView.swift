@@ -1312,6 +1312,16 @@ struct AddTransactionSheet: View {
         memo = t.memo
         date = t.date
         isPlanned = t.isPlanned
+        let s = t.store
+        if !s.isEmpty && !Transaction.stores.contains(s) {
+            store = "직접입력"; customStore = s
+        } else {
+            store = s
+        }
+    }
+
+    var resolvedStore: String {
+        store == "직접입력" ? customStore : store
     }
 
     func submit() {
@@ -1320,12 +1330,12 @@ struct AddTransactionSheet: View {
         if let t = editTransaction {
             t.type = type; t.amount = amount; t.category = category
             t.paymentMethod = paymentMethod; t.memo = memo; t.date = date
-            t.isPlanned = isPlanned
+            t.isPlanned = isPlanned; t.store = resolvedStore
         } else {
             let t = Transaction(
                 amount: amount, type: type, category: category,
                 paymentMethod: paymentMethod, memo: memo, date: date,
-                isPlanned: isPlanned
+                isPlanned: isPlanned, store: resolvedStore
             )
             modelContext.insert(t)
         }
