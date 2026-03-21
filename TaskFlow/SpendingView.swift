@@ -695,13 +695,17 @@ struct TransactionRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(transaction.memo.isEmpty ? transaction.category : transaction.memo)
                     .font(.system(size: 15))
-                HStack(spacing: 6) {
+                HStack(spacing: 4) {
                     Text(transaction.category)
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
-                    Text("·")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.tertiary)
+                    if !transaction.store.isEmpty {
+                        Text("·").font(.system(size: 12)).foregroundStyle(.tertiary)
+                        Text(transaction.store)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                    Text("·").font(.system(size: 12)).foregroundStyle(.tertiary)
                     Text(transaction.paymentMethod)
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
