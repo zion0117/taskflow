@@ -1026,6 +1026,8 @@ struct AddTransactionSheet: View {
     @State private var amountText = ""
     @State private var category = "식비"
     @State private var paymentMethod = "카드"
+    @State private var store = ""
+    @State private var customStore = ""
     @State private var memo = ""
     @State private var date = Date()
     @State private var isPlanned = false
