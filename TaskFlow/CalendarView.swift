@@ -222,3 +222,99 @@ struct CalendarTaskRow: View {
         .overlay(alignment: .bottom) { Divider().padding(.leading, 36) }
     }
 }
+
+// MARK: - 캘린더에서 할일 추가
+struct CalendarAddTaskSheet: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    @FocusState private var focused: Bool
+
+    var date: Date
+    var projects: [Project]
+
+    @State private var title = ""
+    @State private var selectedProject: Project? = nil
+
+    var sortedProjects: [Project] { projects.sorted { $0.name < $1.name } }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("할일") {
+                    TextField("제목 입력", text: $title)
+                        .focused($focused)
+                }
+
+                Section("프로젝트") {
+                    if sortedProjects.isEmpty {
+                        Text("프로젝트 없음").foregroundStyle(.secondary)
+                    } else {
+                        ForEach(sortedProjects) { project in
+                            Button {
+                                selectedProject = project
+                            } label: {
+                                HStack {
+                                    Circle()
+                                        .fill(Color(hex: project.colorHex) ?? .blue)
+                                        .frame(width: 10, height: 10)
+                                    Text(project.name)
+                                        .foregroundStyle(.primary)
+                                    Spacer()
+                                    if selectedProject?.id == project.id {
+                                        Image(systemName: "checkmark")
+                                            .foregroundStyle(.blue)
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+
+                Section {
+                    HStack {
+                        Image(systemName: "calendar")
+                            .foregroundStyle(.secondary)
+                        Text(dateLabel(date))
+                            .foregroundStyle(.secondary)
+                    }
+                } header: { Text("마감일") }
+            }
+            .navigationTitle("할일 추가")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("취소") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("추가") { submit() }
+                        .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
+                }
+            }
+            .onAppear {
+                focused = true
+                selectedProject = sortedProjects.first
+            }
+        }
+    }
+
+    func submit() {
+        guard let project = selectedProject,
+              !title.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        let task = Task(title: title.trimmingCharacters(in: .whitespaces), project: project)
+        task.dueDate = date
+        modelContext.insert(task)
+        project.tasks.append(task)
+        try? modelContext.save()
+        dismiss()
+    }
+
+    func dateLabel(_ d: Date) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ko_KR")
+        f.dateFormat = "M월 d일 (E)"
+        return f.string(from: d)
+    }
+}
