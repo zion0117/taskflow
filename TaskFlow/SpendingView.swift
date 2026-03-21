@@ -1029,13 +1029,20 @@ struct AddTransactionSheet: View {
     @State private var store = ""
     @State private var customStores: [String] = UserDefaults.standard.stringArray(forKey: "customStores") ?? []
     @State private var showManageStores = false
+    @State private var customExpenseCategories: [String] = UserDefaults.standard.stringArray(forKey: "customExpenseCategories") ?? []
+    @State private var customIncomeCategories: [String] = UserDefaults.standard.stringArray(forKey: "customIncomeCategories") ?? []
+    @State private var showManageCategories = false
     @State private var memo = ""
     @State private var date = Date()
     @State private var isPlanned = false
 
     var isEditing: Bool { editTransaction != nil }
     var accentColor: Color { type == "expense" ? .red : .blue }
-    var categories: [String] { type == "expense" ? Transaction.expenseCategories : Transaction.incomeCategories }
+    var categories: [String] {
+        type == "expense"
+            ? Transaction.expenseCategories + customExpenseCategories
+            : Transaction.incomeCategories + customIncomeCategories
+    }
 
     @State private var showDatePicker = false
 
@@ -2178,4 +2185,66 @@ func formatPrice(_ p: Int) -> String {
     let f = NumberFormatter()
     f.numberStyle = .decimal
     return (f.string(from: NSNumber(value: p)) ?? "\(p)") + "원"
+}
+
+// MARK: - 판매처 관리 시트
+struct ManageStoresSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var customStores: [String] = UserDefaults.standard.stringArray(forKey: "customStores") ?? []
+    @State private var newName = ""
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    HStack {
+                        TextField("판매처 이름 입력", text: $newName)
+                        Button {
+                            let name = newName.trimmingCharacters(in: .whitespaces)
+                            guard !name.isEmpty, !customStores.contains(name),
+                                  !Transaction.stores.contains(name) else { return }
+                            customStores.append(name)
+                            UserDefaults.standard.set(customStores, forKey: "customStores")
+                            newName = ""
+                        } label: {
+                            Image(systemName: "plus.circle.fill")
+                                .foregroundStyle(.blue)
+                                .font(.system(size: 20))
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(newName.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                } header: { Text("새 판매처 추가") }
+
+                if !customStores.isEmpty {
+                    Section {
+                        ForEach(customStores, id: \.self) { s in
+                            Label(s, systemImage: "tag")
+                        }
+                        .onDelete { idxs in
+                            customStores.remove(atOffsets: idxs)
+                            UserDefaults.standard.set(customStores, forKey: "customStores")
+                        }
+                    } header: { Text("내가 추가한 판매처") }
+                }
+
+                Section {
+                    ForEach(Transaction.stores, id: \.self) { s in
+                        Label(s, systemImage: Transaction.storeIcon[s] ?? "bag")
+                            .foregroundStyle(.secondary)
+                    }
+                } header: { Text("기본 판매처") }
+            }
+            .navigationTitle("판매처 관리")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("완료") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
 }
