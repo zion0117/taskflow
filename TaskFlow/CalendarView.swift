@@ -198,6 +198,8 @@ struct DayCell: View {
 struct CalendarTaskRow: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var task: Task
+    @State private var showEdit = false
+    @State private var showDeleteAlert = false
 
     var projColor: Color {
         guard let proj = task.project else { return .gray }
