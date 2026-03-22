@@ -208,7 +208,7 @@ class Transaction {
         "주거": "house", "교육": "graduationcap", "여행": "airplane",
         "반려동물": "pawprint", "보험": "shield", "기타": "ellipsis.circle",
         "급여": "banknote", "용돈": "gift", "부업": "briefcase",
-        "투자수익": "chart.line.uptrend.xyaxis", "환급": "arrow.uturn.left", "기타": "ellipsis.circle"
+        "투자수익": "chart.line.uptrend.xyaxis", "환급": "arrow.uturn.left"
     ]
 
     static let categoryColor: [String: String] = [
