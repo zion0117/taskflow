@@ -4,8 +4,14 @@ import SwiftData
 struct TodayView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var projects: [Project]
+    @Query private var allTasks: [Task]
     var timerManager: TimerManager
     @Binding var showAddTask: Project?
+
+    var orphanPending: [Task] {
+        allTasks.filter { $0.project == nil && !$0.isCompleted }
+            .sorted { $0.createdAt < $1.createdAt }
+    }
 
     var pendingGroups: [(Project, [Task])] {
         projects.compactMap { project in
@@ -15,14 +21,14 @@ struct TodayView: View {
     }
 
     var totalSecondsToday: Int {
-        projects.flatMap { $0.tasks }.flatMap { $0.timeEntries }
+        allTasks.flatMap { $0.timeEntries }
             .filter { Calendar.current.isDateInToday($0.startedAt) }
             .reduce(0) { $0 + $1.seconds }
     }
 
-    var completedCount: Int { projects.flatMap { $0.tasks }.filter { $0.isCompleted }.count }
-    var totalCount: Int { projects.flatMap { $0.tasks }.count }
-    var pendingCount: Int { totalCount - completedCount }
+    var completedCount: Int { allTasks.filter { $0.isCompleted }.count }
+    var totalCount: Int { allTasks.count }
+    var pendingCount: Int { allTasks.filter { !$0.isCompleted }.count }
 
     var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
