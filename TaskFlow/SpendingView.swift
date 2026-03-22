@@ -1022,7 +1022,8 @@ struct AddTransactionSheet: View {
 
     @State private var type = "expense"
     @State private var amountText = ""
-    @State private var category = "식비"
+    @State private var category = "중고거래"
+    @State private var subcategory = ""
     @State private var paymentMethod = "카드"
     @State private var store = ""
     @State private var customStores: [String] = UserDefaults.standard.stringArray(forKey: "customStores") ?? []
