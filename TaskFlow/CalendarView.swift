@@ -385,6 +385,7 @@ struct CalendarAddTaskSheet: View {
                     ForEach(sortedProjects) { project in
                         Button {
                             selectedProject = project
+                            applyProjectTag(project)
                         } label: {
                             HStack {
                                 Text(project.name)
