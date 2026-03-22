@@ -227,104 +227,78 @@ struct TaskRow: View {
     var checkColor: Color { project.flatMap { Color(hex: $0.colorHex) } ?? Color.secondary.opacity(0.5) }
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(alignment: .center, spacing: 14) {
-                Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                        task.isCompleted.toggle()
-                        if task.isCompleted && isRunning { timerManager.stop() }
-                        try? modelContext.save()
-                    }
-                } label: {
-                    ZStack {
-                        Circle()
-                            .strokeBorder(checkColor.opacity(0.6), lineWidth: 1.5)
-                            .frame(width: 24, height: 24)
-                        if task.isCompleted {
-                            Circle().fill(checkColor).frame(width: 24, height: 24)
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundStyle(.white)
+        HStack(spacing: 10) {
+            // 체크박스
+            ZStack {
+                Circle()
+                    .strokeBorder(checkColor.opacity(0.7), lineWidth: 1.5)
+                    .frame(width: 18, height: 18)
+                if task.isCompleted {
+                    Circle().fill(checkColor).frame(width: 18, height: 18)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+            }
+            .frame(width: 26, height: 26)
+            .contentShape(Circle())
+            .onTapGesture {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                    task.isCompleted.toggle()
+                    if task.isCompleted && isRunning { timerManager.stop() }
+                    try? modelContext.save()
+                }
+            }
+
+            // 내용
+            VStack(alignment: .leading, spacing: 2) {
+                Text(task.title)
+                    .font(.system(size: 13))
+                    .foregroundStyle(task.isCompleted ? Color.secondary : Color.primary)
+                    .strikethrough(task.isCompleted, color: Color.secondary.opacity(0.5))
+
+                HStack(spacing: 5) {
+                    if let proj = project {
+                        HStack(spacing: 3) {
+                            Circle().fill(checkColor).frame(width: 5, height: 5)
+                            Text(proj.name)
+                                .font(.system(size: 11))
+                                .foregroundStyle(.secondary)
                         }
                     }
+                    if let due = task.dueDate {
+                        Text(formatDate(due))
+                            .font(.system(size: 11))
+                            .foregroundStyle(isPast(due) ? .red : Color.secondary.opacity(0.7))
+                    }
+                    if task.totalSeconds > 0 {
+                        Text(task.formattedTime)
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(task.tags) { tag in
+                        TagChip(tag: tag)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            // 타이머 버튼
+            if !task.isCompleted {
+                Button {
+                    isRunning ? timerManager.stop() : timerManager.start(task: task)
+                } label: {
+                    Image(systemName: isRunning ? "pause.fill" : "play.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(isRunning ? Color.green : Color.secondary.opacity(0.4))
+                        .frame(width: 26, height: 26)
+                        .background(Circle().fill(isRunning ? Color.green.opacity(0.12) : Color.secondary.opacity(0.06)))
                 }
                 .buttonStyle(.plain)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(task.title)
-                        .font(.system(size: 17))
-                        .foregroundStyle(task.isCompleted ? .secondary : .primary)
-                        .strikethrough(task.isCompleted, color: Color.secondary.opacity(0.5))
-
-                    if task.totalSeconds > 0 || task.dueDate != nil || !task.tags.isEmpty {
-                        HStack(spacing: 6) {
-                            if let due = task.dueDate {
-                                Label(formatDate(due), systemImage: "calendar")
-                                    .font(.system(size: 13))
-                                    .foregroundStyle(isPast(due) ? .red : .secondary)
-                            }
-                            if task.totalSeconds > 0 {
-                                Label(task.formattedTime, systemImage: "clock")
-                                    .font(.system(size: 13))
-                                    .foregroundStyle(.secondary)
-                            }
-                            ForEach(task.tags) { tag in
-                                TagChip(tag: tag)
-                            }
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    if !task.isCompleted {
-                        withAnimation(.spring(response: 0.3)) { isExpanded.toggle() }
-                    }
-                }
-
-                if !task.isCompleted {
-                    Button {
-                        isRunning ? timerManager.stop() : timerManager.start(task: task)
-                    } label: {
-                        Image(systemName: isRunning ? "pause.fill" : "play.fill")
-                            .font(.system(size: 11))
-                            .foregroundStyle(isRunning ? Color.green : Color.secondary.opacity(0.5))
-                            .frame(width: 32, height: 32)
-                            .background(Circle().fill(isRunning ? Color.green.opacity(0.15) : Color.white.opacity(0.08)))
-                    }
-                    .buttonStyle(.plain)
-                }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
-
-            if isExpanded {
-                VStack(alignment: .leading, spacing: 10) {
-                    TextField("메모", text: Binding(
-                        get: { task.notes },
-                        set: { task.notes = $0; try? modelContext.save() }
-                    ), axis: .vertical)
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-                    .textFieldStyle(.plain)
-                    .padding(.leading, 54)
-                    .padding(.trailing, 16)
-
-                    Divider().padding(.leading, 54).opacity(0.4)
-
-                    HStack(spacing: 8) {
-                        Spacer().frame(width: 54)
-                        DatePickerPill(task: task)
-                        Spacer()
-                    }
-                    .padding(.bottom, 10)
-                }
-                .background(Color.white.opacity(0.05))
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-
-            Divider().padding(.leading, 54).opacity(0.25)
         }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 6)
         .contextMenu {
             Button {
                 showEdit = true
