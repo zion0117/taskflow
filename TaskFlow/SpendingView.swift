@@ -1074,6 +1074,7 @@ struct AddTransactionSheet: View {
                                 category = val == "expense"
                                     ? Transaction.expenseCategories[0]
                                     : Transaction.incomeCategories[0]
+                                subcategory = ""
                             }
                         } label: {
                             Text(label)
