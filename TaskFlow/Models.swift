@@ -359,6 +359,16 @@ class WishItem {
         "식품":    "fork.knife",
         "기타":    "tag"
     ]
+
+    static let categoryColor: [String: String] = [
+        "전자기기": "3B82F6",
+        "패션":    "A78BFA",
+        "도서":    "F59E0B",
+        "뷰티":    "F472B6",
+        "인테리어": "34D399",
+        "식품":    "FF6B6B",
+        "기타":    "9CA3AF"
+    ]
 }
 
 // MARK: - ScheduledTransaction (정기 거래)
