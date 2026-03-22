@@ -199,7 +199,9 @@ struct DayCell: View {
 
             // 태스크 칩
             ForEach(tasks) { task in
-                let col: Color = task.project.flatMap { Color(hex: $0.colorHex) } ?? Color.gray
+                let col: Color = task.tags.first.flatMap { Color(hex: $0.colorHex) }
+                    ?? task.project.flatMap { Color(hex: $0.colorHex) }
+                    ?? Color.gray
                 HStack(spacing: 2) {
                     RoundedRectangle(cornerRadius: 1)
                         .fill(col)
