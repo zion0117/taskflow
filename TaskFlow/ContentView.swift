@@ -874,6 +874,8 @@ struct ThingsTaskRow: View {
     var timerManager: TimerManager
     var isSelected: Bool
     var onSelect: () -> Void
+    @State private var showEdit = false
+    @State private var showDeleteAlert = false
 
     var isRunning: Bool { timerManager.isRunning(task: task) }
     var projColor: Color { Color(hex: project.colorHex) ?? .blue }
