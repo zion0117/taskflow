@@ -113,7 +113,7 @@ struct TodayView: View {
                 }
 
                 // MARK: - 태스크 목록
-                if pendingGroups.isEmpty {
+                if pendingGroups.isEmpty && orphanPending.isEmpty {
                     VStack(spacing: 10) {
                         Image(systemName: "star.fill")
                             .font(.system(size: 40))
@@ -125,6 +125,27 @@ struct TodayView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.top, 80)
                 } else {
+                    // 프로젝트 없는 태스크 (캘린더에서 추가된 것 등)
+                    if !orphanPending.isEmpty {
+                        VStack(alignment: .leading, spacing: 0) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "tray")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(.secondary)
+                                Text("받은편지함")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 6)
+
+                            ForEach(orphanPending) { task in
+                                TaskRow(task: task, project: nil, timerManager: timerManager)
+                            }
+                        }
+                        .padding(.bottom, 16)
+                    }
+
                     VStack(spacing: 22) {
                         ForEach(pendingGroups, id: \.0.id) { project, tasks in
                             ProjectSection(
