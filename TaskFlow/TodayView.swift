@@ -229,8 +229,8 @@ struct TaskRow: View {
                         .foregroundStyle(task.isCompleted ? .secondary : .primary)
                         .strikethrough(task.isCompleted, color: Color.secondary.opacity(0.5))
 
-                    if task.totalSeconds > 0 || task.dueDate != nil {
-                        HStack(spacing: 8) {
+                    if task.totalSeconds > 0 || task.dueDate != nil || !task.tags.isEmpty {
+                        HStack(spacing: 6) {
                             if let due = task.dueDate {
                                 Label(formatDate(due), systemImage: "calendar")
                                     .font(.system(size: 13))
@@ -240,6 +240,9 @@ struct TaskRow: View {
                                 Label(task.formattedTime, systemImage: "clock")
                                     .font(.system(size: 13))
                                     .foregroundStyle(.secondary)
+                            }
+                            ForEach(task.tags) { tag in
+                                TagChip(tag: tag)
                             }
                         }
                     }
