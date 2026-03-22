@@ -326,6 +326,8 @@ struct CalendarAddTaskSheet: View {
     var date: Date
     var projects: [Project]
 
+    @Query(sort: \Tag.name) private var allTags: [Tag]
+
     @State private var title = ""
     @State private var selectedProject: Project? = nil
     @State private var tempTask: Task? = nil
