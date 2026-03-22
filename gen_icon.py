@@ -2,7 +2,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 BASE = "/Users/a1/Library/Mobile Documents/com~apple~CloudDocs/TaskFlow/TaskFlow/Assets.xcassets/AppIcon.appiconset"
 
-EMOJI = "⏰"  # 알람시계
+EMOJI = "🔗"
 
 def make_icon(size):
     s = size
