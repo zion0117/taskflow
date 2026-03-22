@@ -147,24 +147,20 @@ struct ThingsSidebar: View {
 
     var body: some View {
         List(selection: $selection) {
-            // 스마트 리스트
-            Section {
+            // LIFE
+            Section("Life") {
                 Label("오늘", systemImage: "star.fill")
                     .foregroundStyle(.primary)
                     .tag(SidebarItem.today)
                     .simultaneousGesture(TapGesture().onEnded { onTap?(.today) })
-                Label("통계", systemImage: "chart.bar.fill")
+                Label("Upcoming", systemImage: "calendar.badge.clock")
                     .foregroundStyle(.primary)
-                    .tag(SidebarItem.stats)
-                    .simultaneousGesture(TapGesture().onEnded { onTap?(.stats) })
+                    .tag(SidebarItem.upcoming)
+                    .simultaneousGesture(TapGesture().onEnded { onTap?(.upcoming) })
                 Label("캘린더", systemImage: "calendar")
                     .foregroundStyle(.primary)
                     .tag(SidebarItem.calendar)
                     .simultaneousGesture(TapGesture().onEnded { onTap?(.calendar) })
-                Label("학습 계획", systemImage: "books.vertical.fill")
-                    .foregroundStyle(.primary)
-                    .tag(SidebarItem.studyPlan)
-                    .simultaneousGesture(TapGesture().onEnded { onTap?(.studyPlan) })
                 Label("가계부", systemImage: "wonsign.circle.fill")
                     .foregroundStyle(.primary)
                     .tag(SidebarItem.spending)
@@ -173,6 +169,18 @@ struct ThingsSidebar: View {
                     .foregroundStyle(.primary)
                     .tag(SidebarItem.wishlist)
                     .simultaneousGesture(TapGesture().onEnded { onTap?(.wishlist) })
+            }
+
+            // STUDY
+            Section("Study") {
+                Label("통계", systemImage: "chart.bar.fill")
+                    .foregroundStyle(.primary)
+                    .tag(SidebarItem.stats)
+                    .simultaneousGesture(TapGesture().onEnded { onTap?(.stats) })
+                Label("학습 계획", systemImage: "books.vertical.fill")
+                    .foregroundStyle(.primary)
+                    .tag(SidebarItem.studyPlan)
+                    .simultaneousGesture(TapGesture().onEnded { onTap?(.studyPlan) })
                 Label("노트", systemImage: "note.text")
                     .foregroundStyle(.primary)
                     .tag(SidebarItem.notes)
