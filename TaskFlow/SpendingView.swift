@@ -1400,13 +1400,14 @@ struct AddTransactionSheet: View {
         guard amount > 0 else { return }
         if let t = editTransaction {
             t.type = type; t.amount = amount; t.category = category
+            t.subcategory = subcategory
             t.paymentMethod = paymentMethod; t.memo = memo; t.date = date
             t.isPlanned = isPlanned; t.store = resolvedStore
         } else {
             let t = Transaction(
                 amount: amount, type: type, category: category,
                 paymentMethod: paymentMethod, memo: memo, date: date,
-                isPlanned: isPlanned, store: resolvedStore
+                isPlanned: isPlanned, store: resolvedStore, subcategory: subcategory
             )
             modelContext.insert(t)
         }
