@@ -99,6 +99,7 @@ class Tag {
     var name: String
     var colorHex: String
     var createdAt: Date
+    var tasks: [Task] = []  // many-to-many 역관계
 
     init(name: String, colorHex: String = "6366F1") {
         self.id = UUID()
