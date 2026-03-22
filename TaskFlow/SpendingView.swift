@@ -1164,6 +1164,43 @@ struct AddTransactionSheet: View {
                     ManageCategoriesSheet()
                 }
 
+                // 구독 서브카테고리
+                if category == "구독" {
+                    infoRow(label: "구독 서비스") {
+                        Menu {
+                            Button { subcategory = "" } label: {
+                                HStack {
+                                    Text("선택 안 함")
+                                    if subcategory.isEmpty { Image(systemName: "checkmark") }
+                                }
+                            }
+                            Divider()
+                            ForEach(Transaction.subscriptionSubcategories, id: \.self) { sub in
+                                Button { subcategory = sub } label: {
+                                    HStack {
+                                        Text(sub)
+                                        if subcategory == sub { Image(systemName: "checkmark") }
+                                    }
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: 5) {
+                                Text(subcategory.isEmpty ? "서비스 선택" : subcategory)
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(subcategory.isEmpty ? .secondary : .primary)
+                                Image(systemName: "chevron.up.chevron.down")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.horizontal, 10).padding(.vertical, 5)
+                            .background(Color.secondary.opacity(0.1))
+                            .clipShape(RoundedRectangle(cornerRadius: 7))
+                            .overlay(RoundedRectangle(cornerRadius: 7).stroke(Color.secondary.opacity(0.25), lineWidth: 1))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
                 Divider().padding(.horizontal, 16)
 
                 // MARK: 결제수단
