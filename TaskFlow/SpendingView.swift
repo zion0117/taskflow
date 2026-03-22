@@ -1385,6 +1385,7 @@ struct AddTransactionSheet: View {
         type = t.type
         amountText = "\(t.amount)"
         category = t.category
+        subcategory = t.subcategory
         paymentMethod = t.paymentMethod
         memo = t.memo
         date = t.date
