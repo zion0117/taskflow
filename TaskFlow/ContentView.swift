@@ -93,6 +93,8 @@ struct MacContentView: View {
                 switch selection {
                 case .today:
                     TodayView(timerManager: timerManager, showAddTask: .constant(nil))
+                case .upcoming:
+                    UpcomingView()
                 case .stats:
                     StatsView()
                 case .calendar:
