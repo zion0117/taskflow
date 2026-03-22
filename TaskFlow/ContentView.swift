@@ -982,6 +982,37 @@ struct ThingsTaskRow: View {
 
             Divider().padding(.leading, 68)
         }
+        .contextMenu {
+            Button {
+                showEdit = true
+            } label: {
+                Label("편집", systemImage: "pencil")
+            }
+            Button {
+                task.isCompleted.toggle()
+                if task.isCompleted && timerManager.isRunning(task: task) { timerManager.stop() }
+                try? modelContext.save()
+            } label: {
+                Label(task.isCompleted ? "미완료로 표시" : "완료로 표시",
+                      systemImage: task.isCompleted ? "circle" : "checkmark.circle")
+            }
+            Divider()
+            Button(role: .destructive) {
+                showDeleteAlert = true
+            } label: {
+                Label("삭제", systemImage: "trash")
+            }
+        }
+        .sheet(isPresented: $showEdit) {
+            TaskEditSheet(task: task)
+        }
+        .alert("태스크를 삭제할까요?", isPresented: $showDeleteAlert) {
+            Button("삭제", role: .destructive) {
+                modelContext.delete(task)
+                try? modelContext.save()
+            }
+            Button("취소", role: .cancel) {}
+        }
     }
 
     func formatDate(_ d: Date) -> String {
