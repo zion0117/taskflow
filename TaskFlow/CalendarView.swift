@@ -500,6 +500,23 @@ struct CalendarAddTaskSheet: View {
         }
     }
 
+    func applyProjectTag(_ project: Project) {
+        guard let task = tempTask else { return }
+        // 기존 프로젝트 태그 제거 (이전 프로젝트명과 같은 태그)
+        task.tags.removeAll { tag in projects.contains { $0.name == tag.name } }
+        // 프로젝트명과 동일한 태그 찾거나 새로 생성
+        let existing = allTags.first { $0.name == project.name }
+        let tag = existing ?? {
+            let t = Tag(name: project.name, colorHex: project.colorHex)
+            modelContext.insert(t)
+            return t
+        }()
+        if !task.tags.contains(where: { $0.id == tag.id }) {
+            task.tags.append(tag)
+        }
+        try? modelContext.save()
+    }
+
     func submit() {
         let trimmed = title.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty, let task = tempTask else { return }
