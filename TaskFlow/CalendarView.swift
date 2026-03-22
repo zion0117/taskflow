@@ -224,7 +224,7 @@ struct DayCell: View {
             }
         }
         .padding(.horizontal, 2)
-        .padding(.vertical, 5)
+        .padding(.vertical, 3)
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 }
