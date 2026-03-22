@@ -217,7 +217,7 @@ struct ProjectSection: View {
 struct TaskRow: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var task: Task
-    var project: Project
+    var project: Project?
     var timerManager: TimerManager
     @State private var isExpanded = false
     @State private var showEdit = false
