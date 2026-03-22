@@ -179,12 +179,13 @@ class Transaction {
     }
 
     static let expenseCategories = [
-        "식비", "카페/디저트", "배달", "교통", "쇼핑", "온라인쇼핑",
-        "문화/여가", "의료", "미용/뷰티", "운동/헬스", "통신", "구독서비스",
-        "주거", "교육", "여행", "반려동물", "보험", "기타"
+        "중고거래", "구독", "배송비", "의류", "뷰티", "생필품", "디지털", "소셜", "문화", "기타"
     ]
-    static let incomeCategories  = ["급여", "용돈", "부업", "투자수익", "환급", "기타"]
+    static let incomeCategories  = ["구독", "용돈", "환불", "중고거래", "기타"]
     static let paymentMethods    = ["카드", "현금", "계좌이체", "페이"]
+
+    // 구독 서브카테고리
+    static let subscriptionSubcategories = ["토스프라임", "애플뮤직", "Claude", "기타"]
 
     // 구매처/플랫폼
     static let stores = [
