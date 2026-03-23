@@ -9,13 +9,25 @@ struct TodayView: View {
     @Binding var showAddTask: Project?
 
     var orphanPending: [Task] {
-        allTasks.filter { $0.project == nil && !$0.isCompleted }
-            .sorted { $0.createdAt < $1.createdAt }
+        allTasks.filter { task in
+            guard task.project == nil && !task.isCompleted else { return false }
+            if let due = task.dueDate {
+                return Calendar.current.isDateInToday(due)
+            }
+            return true
+        }
+        .sorted { $0.createdAt < $1.createdAt }
     }
 
     var pendingGroups: [(Project, [Task])] {
         projects.compactMap { project in
-            let tasks = project.tasks.filter { !$0.isCompleted }.sorted { $0.createdAt < $1.createdAt }
+            let tasks = project.tasks.filter { task in
+                guard !task.isCompleted else { return false }
+                if let due = task.dueDate {
+                    return Calendar.current.isDateInToday(due)
+                }
+                return true
+            }.sorted { $0.createdAt < $1.createdAt }
             return tasks.isEmpty ? nil : (project, tasks)
         }
     }
