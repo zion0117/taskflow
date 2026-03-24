@@ -8,26 +8,24 @@ struct TodayView: View {
     var timerManager: TimerManager
     @Binding var showAddTask: Project?
 
+    func isForToday(_ task: Task) -> Bool {
+        if let due = task.dueDate {
+            return Calendar.current.isDateInToday(due)
+        }
+        return !task.isCompleted  // 날짜 없는 태스크는 미완료만 표시
+    }
+
     var orphanPending: [Task] {
         allTasks.filter { task in
-            guard task.project == nil && !task.isCompleted else { return false }
-            if let due = task.dueDate {
-                return Calendar.current.isDateInToday(due)
-            }
-            return true
+            task.project == nil && isForToday(task)
         }
-        .sorted { $0.createdAt < $1.createdAt }
+        .sorted { ($0.isCompleted ? 1 : 0, $0.createdAt) < ($1.isCompleted ? 1 : 0, $1.createdAt) }
     }
 
     var pendingGroups: [(Project, [Task])] {
         projects.compactMap { project in
-            let tasks = project.tasks.filter { task in
-                guard !task.isCompleted else { return false }
-                if let due = task.dueDate {
-                    return Calendar.current.isDateInToday(due)
-                }
-                return true
-            }.sorted { $0.createdAt < $1.createdAt }
+            let tasks = project.tasks.filter { isForToday($0) }
+                .sorted { ($0.isCompleted ? 1 : 0, $0.createdAt) < ($1.isCompleted ? 1 : 0, $1.createdAt) }
             return tasks.isEmpty ? nil : (project, tasks)
         }
     }
