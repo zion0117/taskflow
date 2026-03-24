@@ -151,54 +151,47 @@ struct ThingsSidebar: View {
             Section(content: {
                 Label("오늘", systemImage: "star.fill")
                     .foregroundStyle(.primary).lineLimit(1)
-                    .padding(.leading, 4)
-                    .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 6))
+                    .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 6))
                     .tag(SidebarItem.today)
                     .simultaneousGesture(TapGesture().onEnded { onTap?(.today) })
                 Label("Upcoming", systemImage: "calendar.badge.clock")
                     .foregroundStyle(.primary).lineLimit(1)
-                    .padding(.leading, 4)
-                    .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 6))
+                    .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 6))
                     .tag(SidebarItem.upcoming)
                     .simultaneousGesture(TapGesture().onEnded { onTap?(.upcoming) })
                 Label("캘린더", systemImage: "calendar")
                     .foregroundStyle(.primary).lineLimit(1)
-                    .padding(.leading, 4)
-                    .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 6))
+                    .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 6))
                     .tag(SidebarItem.calendar)
                     .simultaneousGesture(TapGesture().onEnded { onTap?(.calendar) })
                 Label("가계부", systemImage: "wonsign.circle.fill")
                     .foregroundStyle(.primary).lineLimit(1)
-                    .padding(.leading, 4)
-                    .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 6))
+                    .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 6))
                     .tag(SidebarItem.spending)
                     .simultaneousGesture(TapGesture().onEnded { onTap?(.spending) })
                 Label("위시리스트", systemImage: "heart")
                     .foregroundStyle(.primary).lineLimit(1)
-                    .padding(.leading, 4)
-                    .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 6))
+                    .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 6))
                     .tag(SidebarItem.wishlist)
                     .simultaneousGesture(TapGesture().onEnded { onTap?(.wishlist) })
             }, header: {
-                Text("Life").padding(.leading, 4)
+                Text("Life").padding(.leading, 10)
             })
 
             // STUDY
             Section(content: {
                 Label("통계", systemImage: "chart.bar.fill")
                     .foregroundStyle(.primary).lineLimit(1)
-                    .padding(.leading, 4)
-                    .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 6))
+                    .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 6))
                     .tag(SidebarItem.stats)
                     .simultaneousGesture(TapGesture().onEnded { onTap?(.stats) })
                 Label("학습 계획", systemImage: "books.vertical.fill")
                     .foregroundStyle(.primary).lineLimit(1)
-                    .padding(.leading, 4)
-                    .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 6))
+                    .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 6))
                     .tag(SidebarItem.studyPlan)
                     .simultaneousGesture(TapGesture().onEnded { onTap?(.studyPlan) })
             }, header: {
-                Text("Study").padding(.leading, 4)
+                Text("Study").padding(.leading, 10)
             })
 
             // Area별 프로젝트
@@ -222,8 +215,7 @@ struct ThingsSidebar: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(.leading, 4)
-                    .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 6))
+                    .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 6))
                     .tag(SidebarItem.area(area.id))
                     .simultaneousGesture(TapGesture().onEnded { onTap?(.area(area.id)) })
 
@@ -245,7 +237,7 @@ struct ThingsSidebar: View {
                                     .foregroundStyle(.secondary)
                             }
                         }
-                        .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 6))
+                        .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 6))
                         .tag(SidebarItem.project(project.id))
                         .simultaneousGesture(TapGesture().onEnded { onTap?(.project(project.id)) })
                     }
@@ -267,12 +259,12 @@ struct ThingsSidebar: View {
                                 Text("\(pending)").font(.system(size: 12)).foregroundStyle(.secondary)
                             }
                         }
-                        .listRowInsets(EdgeInsets(top: 2, leading: 10, bottom: 2, trailing: 6))
+                        .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 6))
                         .tag(SidebarItem.project(project.id))
                         .simultaneousGesture(TapGesture().onEnded { onTap?(.project(project.id)) })
                     }
                 }, header: {
-                    Text("프로젝트").padding(.leading, 4)
+                    Text("프로젝트").padding(.leading, 10)
                 })
             }
         }
@@ -290,7 +282,7 @@ struct ThingsSidebar: View {
                     .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
-                .padding(.horizontal, 16)
+                .padding(.leading, 18).padding(.trailing, 8)
                 .padding(.vertical, 12)
                 Spacer()
             }
