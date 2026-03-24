@@ -10,11 +10,13 @@ struct UpcomingView: View {
     var upcomingGroups: [(Date, [Task])] {
         let today = calendar.startOfDay(for: Date())
         let tasks = allTasks.filter { task in
-            guard let due = task.dueDate, !task.isCompleted else { return false }
+            guard let due = task.dueDate else { return false }
             return calendar.startOfDay(for: due) >= today
         }
         let grouped = Dictionary(grouping: tasks) { calendar.startOfDay(for: $0.dueDate!) }
-        return grouped.sorted { $0.key < $1.key }
+        return grouped.sorted { $0.key < $1.key }.map { (date, tasks) in
+            (date, tasks.sorted { ($0.isCompleted ? 1 : 0) < ($1.isCompleted ? 1 : 0) })
+        }
     }
 
     var body: some View {
