@@ -47,6 +47,8 @@ struct TodayView: View {
         }.count
     }
 
+    var todayExams: [ExamEvent] { projects.examEvents(on: Date()) }
+
     var greeting: String {
         let hour = Calendar.current.component(.hour, from: Date())
         switch hour {
@@ -126,6 +128,43 @@ struct TodayView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 14))
                     .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.green.opacity(0.2), lineWidth: 1))
                     .padding(.horizontal, 20)
+                    .padding(.bottom, 16)
+                }
+
+                // MARK: - 오늘 시험
+                if !todayExams.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        HStack(spacing: 6) {
+                            Image(systemName: "doc.text.fill")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.orange)
+                            Text("오늘 시험")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(.orange)
+                        }
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 6)
+
+                        ForEach(todayExams) { exam in
+                            let col = Color(hex: exam.colorHex) ?? Color.orange
+                            HStack(spacing: 10) {
+                                ZStack {
+                                    Circle().fill(col.opacity(0.15)).frame(width: 26, height: 26)
+                                    Image(systemName: exam.icon).font(.system(size: 11)).foregroundStyle(col)
+                                }
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(exam.title).font(.system(size: 13, weight: .medium))
+                                    if let area = exam.project.area {
+                                        Text(area.name).font(.system(size: 11)).foregroundStyle(.secondary)
+                                    }
+                                }
+                                Spacer()
+                                Text("D-Day").font(.system(size: 11, weight: .bold)).foregroundStyle(.red)
+                            }
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 6)
+                        }
+                    }
                     .padding(.bottom, 16)
                 }
 

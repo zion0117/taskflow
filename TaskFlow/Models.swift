@@ -132,6 +132,48 @@ class TimeEntry {
     var isRunning: Bool { endedAt == nil }
 }
 
+// MARK: - ExamEvent (프로젝트 중간고사/기말고사 뷰 모델)
+struct ExamEvent: Identifiable {
+    let id: String          // project.id + type
+    let project: Project
+    let type: String        // "midterm" | "final"
+    var title: String { "\(project.name) \(type == "midterm" ? "중간고사" : "기말고사")" }
+    var icon: String  { type == "midterm" ? "doc.text.fill" : "checkmark.seal.fill" }
+    var colorHex: String { project.colorHex }
+    var date: Date { type == "midterm" ? project.midtermDate! : project.finalDate! }
+}
+
+extension [Project] {
+    func examEvents(on date: Date) -> [ExamEvent] {
+        let cal = Calendar.current
+        return flatMap { proj -> [ExamEvent] in
+            var ev: [ExamEvent] = []
+            if let d = proj.midtermDate, cal.isDate(d, inSameDayAs: date) {
+                ev.append(ExamEvent(id: proj.id.uuidString + "mid", project: proj, type: "midterm"))
+            }
+            if let d = proj.finalDate, cal.isDate(d, inSameDayAs: date) {
+                ev.append(ExamEvent(id: proj.id.uuidString + "fin", project: proj, type: "final"))
+            }
+            return ev
+        }
+    }
+    func upcomingExamEvents(from today: Date) -> [(Date, ExamEvent)] {
+        let start = Calendar.current.startOfDay(for: today)
+        return flatMap { proj -> [(Date, ExamEvent)] in
+            var ev: [(Date, ExamEvent)] = []
+            if let d = proj.midtermDate, Calendar.current.startOfDay(for: d) >= start {
+                ev.append((Calendar.current.startOfDay(for: d),
+                           ExamEvent(id: proj.id.uuidString + "mid", project: proj, type: "midterm")))
+            }
+            if let d = proj.finalDate, Calendar.current.startOfDay(for: d) >= start {
+                ev.append((Calendar.current.startOfDay(for: d),
+                           ExamEvent(id: proj.id.uuidString + "fin", project: proj, type: "final")))
+            }
+            return ev
+        }
+    }
+}
+
 // MARK: - SchoolEvent (주요 행사)
 @Model
 class SchoolEvent {

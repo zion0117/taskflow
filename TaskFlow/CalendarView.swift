@@ -17,7 +17,10 @@ struct CalendarView: View {
         }
     }
 
-    var tasksForSelected: [Task] { tasksForDate(selectedDate) }
+    func examsForDate(_ date: Date) -> [ExamEvent] { projects.examEvents(on: date) }
+
+    var tasksForSelected: [Task]      { tasksForDate(selectedDate) }
+    var examsForSelected: [ExamEvent] { examsForDate(selectedDate) }
 
     var body: some View {
         ScrollView {
@@ -76,6 +79,7 @@ struct CalendarView: View {
                                         isToday: calendar.isDateInToday(date),
                                         isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
                                         tasks: tasksForDate(date),
+                                        exams: examsForDate(date),
                                         colIndex: di
                                     )
                                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -111,7 +115,11 @@ struct CalendarView: View {
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
 
-                    if tasksForSelected.isEmpty {
+                    ForEach(examsForSelected) { exam in
+                        ExamEventRow(exam: exam)
+                    }
+
+                    if tasksForSelected.isEmpty && examsForSelected.isEmpty {
                         Text("태스크 없음")
                             .font(.system(size: 15))
                             .foregroundStyle(.tertiary)
@@ -171,6 +179,7 @@ struct DayCell: View {
     var isToday: Bool
     var isSelected: Bool
     var tasks: [Task]
+    var exams: [ExamEvent] = []
     var colIndex: Int = 0
 
     var dayNum: Int { Calendar.current.component(.day, from: date) }
@@ -231,6 +240,24 @@ struct DayCell: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+            }
+
+            // 시험 칩 (읽기 전용)
+            ForEach(exams) { exam in
+                let col = Color(hex: exam.colorHex) ?? Color.orange
+                HStack(spacing: 2) {
+                    Image(systemName: exam.icon)
+                        .font(.system(size: 6))
+                        .foregroundStyle(col)
+                    Text(exam.title)
+                        .font(.system(size: 8))
+                        .foregroundStyle(isCurrentMonth ? col.opacity(0.9) : col.opacity(0.4))
+                        .lineLimit(1)
+                }
+                .padding(.horizontal, 2)
+                .padding(.vertical, 1)
+                .background(col.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 2))
             }
         }
         .padding(.horizontal, 2)
@@ -545,5 +572,39 @@ struct CalendarAddTaskSheet: View {
         f.locale = Locale(identifier: "ko_KR")
         f.dateFormat = "M월 d일 (E)"
         return f.string(from: d)
+    }
+}
+
+// MARK: - 시험 이벤트 행
+struct ExamEventRow: View {
+    var exam: ExamEvent
+
+    var col: Color { Color(hex: exam.colorHex) ?? .orange }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(col.opacity(0.15))
+                    .frame(width: 36, height: 36)
+                Image(systemName: exam.icon)
+                    .font(.system(size: 14))
+                    .foregroundStyle(col)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(exam.title)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.primary)
+                if let area = exam.project.area {
+                    Text(area.name)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .overlay(alignment: .bottom) { Divider().padding(.leading, 52) }
     }
 }

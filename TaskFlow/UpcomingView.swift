@@ -4,20 +4,32 @@ import SwiftData
 // MARK: - Upcoming View
 struct UpcomingView: View {
     @Query(sort: \Task.dueDate) private var allTasks: [Task]
+    @Query private var projects: [Project]
 
     var calendar: Calendar { Calendar.current }
 
-    var upcomingGroups: [(Date, [Task])] {
+    var upcomingDates: [Date] {
         let today = calendar.startOfDay(for: Date())
-        let tasks = allTasks.filter { task in
-            guard let due = task.dueDate else { return false }
-            return calendar.startOfDay(for: due) >= today
+        var dates = Set<Date>()
+        for task in allTasks {
+            if let due = task.dueDate, calendar.startOfDay(for: due) >= today {
+                dates.insert(calendar.startOfDay(for: due))
+            }
         }
-        let grouped = Dictionary(grouping: tasks) { calendar.startOfDay(for: $0.dueDate!) }
-        return grouped.sorted { $0.key < $1.key }.map { (date, tasks) in
-            (date, tasks.sorted { ($0.isCompleted ? 1 : 0) < ($1.isCompleted ? 1 : 0) })
+        for (date, _) in projects.upcomingExamEvents(from: Date()) {
+            dates.insert(date)
         }
+        return dates.sorted()
     }
+
+    func tasksFor(_ date: Date) -> [Task] {
+        allTasks.filter { task in
+            guard let due = task.dueDate else { return false }
+            return calendar.isDate(due, inSameDayAs: date)
+        }.sorted { ($0.isCompleted ? 1 : 0) < ($1.isCompleted ? 1 : 0) }
+    }
+
+    func examsFor(_ date: Date) -> [ExamEvent] { projects.examEvents(on: date) }
 
     var body: some View {
         ScrollView {
@@ -35,7 +47,7 @@ struct UpcomingView: View {
                 .padding(.top, 14)
                 .padding(.bottom, 6)
 
-                if upcomingGroups.isEmpty {
+                if upcomingDates.isEmpty {
                     VStack(spacing: 8) {
                         Image(systemName: "calendar")
                             .font(.system(size: 32))
@@ -47,8 +59,8 @@ struct UpcomingView: View {
                     .frame(maxWidth: .infinity)
                     .padding(.top, 80)
                 } else {
-                    ForEach(upcomingGroups, id: \.0) { date, tasks in
-                        UpcomingDaySection(date: date, tasks: tasks)
+                    ForEach(upcomingDates, id: \.self) { date in
+                        UpcomingDaySection(date: date, tasks: tasksFor(date), exams: examsFor(date))
                     }
                 }
 
@@ -63,6 +75,7 @@ struct UpcomingView: View {
 struct UpcomingDaySection: View {
     var date: Date
     var tasks: [Task]
+    var exams: [ExamEvent] = []
 
     var cal: Calendar { Calendar.current }
     var isToday: Bool    { cal.isDateInToday(date) }
@@ -108,6 +121,9 @@ struct UpcomingDaySection: View {
 
             Divider().padding(.horizontal, 20)
 
+            ForEach(exams) { exam in
+                UpcomingExamRow(exam: exam)
+            }
             ForEach(tasks) { task in
                 UpcomingTaskRow(task: task)
             }
@@ -216,5 +232,50 @@ struct UpcomingTaskRow: View {
         let today = Calendar.current.startOfDay(for: Date())
         let target = Calendar.current.startOfDay(for: date)
         return Calendar.current.dateComponents([.day], from: today, to: target).day ?? 0
+    }
+}
+
+// MARK: - 시험 이벤트 행 (Upcoming)
+struct UpcomingExamRow: View {
+    var exam: ExamEvent
+    var col: Color { Color(hex: exam.colorHex) ?? .orange }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            ZStack {
+                Circle()
+                    .fill(col.opacity(0.15))
+                    .frame(width: 26, height: 26)
+                Image(systemName: exam.icon)
+                    .font(.system(size: 11))
+                    .foregroundStyle(col)
+            }
+            VStack(alignment: .leading, spacing: 2) {
+                Text(exam.title)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(.primary)
+                if let area = exam.project.area {
+                    Text(area.name)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            let days = Calendar.current.dateComponents([.day],
+                from: Calendar.current.startOfDay(for: Date()),
+                to: Calendar.current.startOfDay(for: exam.date)).day ?? 0
+            if days > 1 {
+                HStack(spacing: 2) {
+                    Image(systemName: "flag.fill").font(.system(size: 9))
+                    Text("\(days)일 후").font(.system(size: 11))
+                }.foregroundStyle(col.opacity(0.7))
+            } else if days == 1 {
+                Text("내일").font(.system(size: 11, weight: .medium)).foregroundStyle(.orange)
+            } else if days == 0 {
+                Text("D-Day").font(.system(size: 11, weight: .bold)).foregroundStyle(.red)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 6)
     }
 }
