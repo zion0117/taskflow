@@ -933,6 +933,198 @@ struct ProjectDetailView: View {
     }
 }
 
+// MARK: - Sub Projects Section
+struct SubProjectsSection: View {
+    @Bindable var project: Project
+    var onAddSubProject: (() -> Void)?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("서브 폴더")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if let onAdd = onAddSubProject {
+                    Button { onAdd() } label: {
+                        Image(systemName: "plus")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 32)
+            .padding(.top, 16)
+            .padding(.bottom, 8)
+
+            ForEach(project.subProjects.sorted { $0.order < $1.order }) { sub in
+                HStack(spacing: 10) {
+                    Image(systemName: "folder.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color(hex: sub.colorHex) ?? .blue)
+                    Text(sub.name)
+                        .font(.system(size: 13))
+                    Spacer()
+                    if sub.pendingCount > 0 {
+                        Text("\(sub.pendingCount)")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.horizontal, 32)
+                .padding(.vertical, 8)
+                .overlay(alignment: .bottom) { Divider().padding(.leading, 32) }
+            }
+
+            if project.subProjects.isEmpty {
+                Text("+ 버튼으로 서브 폴더를 추가하세요")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.tertiary)
+                    .padding(.horizontal, 32)
+                    .padding(.bottom, 10)
+            }
+        }
+    }
+}
+
+// MARK: - Project Notes Section
+struct ProjectNotesSection: View {
+    @Environment(\.modelContext) private var modelContext
+    @Bindable var project: Project
+    @State private var showAddNote = false
+    @State private var newNoteTitle = ""
+    @State private var newNoteType = "spreadsheet"
+    @State private var openNote: NoteDocument? = nil
+
+    var sortedNotes: [NoteDocument] {
+        project.noteDocuments.sorted { $0.updatedAt > $1.updatedAt }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("필기노트")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+                Button { showAddNote = true } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, 32)
+            .padding(.top, 16)
+            .padding(.bottom, 8)
+
+            ForEach(sortedNotes) { note in
+                Button {
+                    openNote = note
+                } label: {
+                    HStack(spacing: 10) {
+                        Image(systemName: note.type == "spreadsheet" ? "tablecells" : "circle.hexagongrid")
+                            .font(.system(size: 12))
+                            .foregroundStyle(note.type == "spreadsheet" ? Color.green : Color.purple)
+                            .frame(width: 20)
+                        Text(note.title)
+                            .font(.system(size: 13))
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Text(note.type == "spreadsheet" ? "표" : "맵")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .buttonStyle(.plain)
+                .padding(.horizontal, 32)
+                .padding(.vertical, 8)
+                .overlay(alignment: .bottom) { Divider().padding(.leading, 32) }
+                .contextMenu {
+                    Button(role: .destructive) {
+                        project.noteDocuments.removeAll { $0.id == note.id }
+                        modelContext.delete(note)
+                        try? modelContext.save()
+                    } label: {
+                        Label("삭제", systemImage: "trash")
+                    }
+                }
+            }
+
+            if sortedNotes.isEmpty {
+                Text("+ 버튼으로 스프레드시트 또는 마인드맵을 추가하세요")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.tertiary)
+                    .padding(.horizontal, 32)
+                    .padding(.bottom, 10)
+            }
+        }
+        .sheet(isPresented: $showAddNote) {
+            NavigationStack {
+                Form {
+                    Section("제목") {
+                        TextField("노트 제목", text: $newNoteTitle)
+                    }
+                    Section("종류") {
+                        Picker("종류", selection: $newNoteType) {
+                            Label("스프레드시트", systemImage: "tablecells").tag("spreadsheet")
+                            Label("마인드맵", systemImage: "circle.hexagongrid").tag("mindmap")
+                        }
+                        .pickerStyle(.inline)
+                        .labelsHidden()
+                    }
+                }
+                .navigationTitle("새 필기노트")
+                #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("취소") { showAddNote = false; newNoteTitle = "" }
+                    }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("추가") { addNote() }.disabled(newNoteTitle.isEmpty)
+                    }
+                }
+            }
+            .presentationDetents([.medium])
+        }
+        .sheet(item: $openNote) { note in
+            NavigationStack {
+                Group {
+                    if note.type == "spreadsheet" {
+                        SpreadsheetEditorView(document: note)
+                    } else {
+                        MindMapEditorView(document: note)
+                    }
+                }
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("닫기") { openNote = nil }
+                    }
+                }
+            }
+        }
+    }
+
+    func addNote() {
+        let doc = NoteDocument(title: newNoteTitle, type: newNoteType)
+        doc.project = project
+        modelContext.insert(doc)
+        if newNoteType == "mindmap" {
+            let root = MindMapNode(text: newNoteTitle, x: 300, y: 300)
+            root.document = doc
+            doc.mapNodes.append(root)
+            modelContext.insert(root)
+        }
+        project.noteDocuments.append(doc)
+        try? modelContext.save()
+        showAddNote = false
+        newNoteTitle = ""
+    }
+}
+
 // MARK: - Things Task Row
 struct ThingsTaskRow: View {
     @Environment(\.modelContext) private var modelContext
