@@ -110,7 +110,7 @@ struct MacContentView: View {
                     WishlistView()
                 case .project(let id):
                     if let project = projects.first(where: { $0.id == id }) {
-                        ProjectDetailView(project: project, timerManager: timerManager)
+                        ProjectDetailView(project: project, timerManager: timerManager, onAddSubProject: { showAddSubProject = project })
                             .id(project.id)
                     }
                 case .area(let id):
