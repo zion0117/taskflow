@@ -747,6 +747,7 @@ struct ProjectDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var project: Project
     var timerManager: TimerManager
+    var onOpenNote: ((NoteDocument) -> Void)? = nil
 
     @State private var newTaskTitle = ""
     @State private var isAddingTask = false
