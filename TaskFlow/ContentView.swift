@@ -273,13 +273,13 @@ struct ThingsSidebar: View {
                     ForEach(looseProjects) { project in
                         HStack(spacing: 8) {
                             Image(systemName: "folder.fill")
-                                .font(.system(size: 11))
+                                .font(.system(size: 10))
                                 .foregroundStyle(Color(hex: project.colorHex) ?? .blue)
-                            Text(project.name).font(.system(size: 13)).lineLimit(1)
+                            Text(project.name).font(.system(size: 12)).lineLimit(1)
                             Spacer()
                             let pending = project.pendingCount
                             if pending > 0 {
-                                Text("\(pending)").font(.system(size: 12)).foregroundStyle(.secondary)
+                                Text("\(pending)").font(.system(size: 11)).foregroundStyle(.secondary)
                             }
                         }
                         .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 6))
@@ -287,7 +287,7 @@ struct ThingsSidebar: View {
                         .simultaneousGesture(TapGesture().onEnded { onTap?(.project(project.id)) })
                     }
                 }, header: {
-                    Text("프로젝트").padding(.leading, 10)
+                    Text("프로젝트").font(.system(size: 10, weight: .semibold)).padding(.leading, 10)
                 })
             }
         }
