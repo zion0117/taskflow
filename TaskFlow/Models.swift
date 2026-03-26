@@ -520,19 +520,38 @@ class StudySession {
     var label: String { "\(units)\(unitType)" }
 }
 
+// MARK: - NoteFolder (노트 폴더)
+@Model
+class NoteFolder {
+    var id: UUID
+    var name: String
+    var order: Int
+    var project: Project?
+    @Relationship(deleteRule: .cascade, inverse: \NoteDocument.folder) var notes: [NoteDocument] = []
+
+    init(name: String, order: Int = 0, project: Project? = nil) {
+        self.id = UUID()
+        self.name = name
+        self.order = order
+        self.project = project
+    }
+}
+
 // MARK: - NoteDocument (노트 문서)
 @Model
 class NoteDocument {
     var id: UUID
     var title: String
-    var type: String          // "spreadsheet" | "mindmap"
+    var type: String          // "note" | "mindmap" (spreadsheet는 레거시)
     var createdAt: Date
     var updatedAt: Date
     @Relationship(deleteRule: .cascade) var cells: [SpreadsheetCell] = []
     @Relationship(deleteRule: .cascade) var mapNodes: [MindMapNode] = []
-    var project: Project?     // 연결된 프로젝트 (nil이면 독립 노트)
+    @Relationship(deleteRule: .cascade) var blocks: [NoteBlock] = []
+    var project: Project?     // 연결된 프로젝트
+    var folder: NoteFolder?   // 연결된 폴더 (nil이면 프로젝트 직접 연결)
 
-    init(title: String, type: String) {
+    init(title: String, type: String = "note") {
         self.id = UUID()
         self.title = title
         self.type = type
