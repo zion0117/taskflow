@@ -908,10 +908,10 @@ struct ProjectDetailView: View {
 struct ProjectNotesAndFoldersSection: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var project: Project
+    var onOpenNote: ((NoteDocument) -> Void)? = nil
     @State private var showAddNote = false
     @State private var showAddFolder = false
     @State private var newTitle = ""
-    @State private var openNote: NoteDocument? = nil
     @State private var openFolder: NoteFolder? = nil
 
     // 폴더 없는 직접 노트
@@ -962,7 +962,7 @@ struct ProjectNotesAndFoldersSection: View {
 
             // 폴더 없는 직접 노트들
             ForEach(directNotes) { note in
-                NoteDocumentRow(note: note, onOpen: { openNote = note }, onDelete: {
+                NoteDocumentRow(note: note, onOpen: { navigateToNote(note) }, onDelete: {
                     project.noteDocuments.removeAll { $0.id == note.id }
                     modelContext.delete(note)
                     try? modelContext.save()
@@ -987,7 +987,10 @@ struct ProjectNotesAndFoldersSection: View {
                 try? modelContext.save()
                 showAddNote = false
                 newTitle = ""
-                openNote = doc
+                // 생성 후 바로 열기
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    navigateToNote(doc)
+                }
             } onCancel: {
                 showAddNote = false; newTitle = ""
             }
@@ -1005,21 +1008,14 @@ struct ProjectNotesAndFoldersSection: View {
                 showAddFolder = false; newTitle = ""
             }
         }
-        // 노트 열기
-        .sheet(item: $openNote) { note in
-            NavigationStack {
-                NoteEditorView(document: note)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("닫기") { openNote = nil }
-                        }
-                    }
-            }
-        }
-        // 폴더 열기
+        // 폴더 열기 (폴더는 시트로 유지)
         .sheet(item: $openFolder) { folder in
-            NoteFolderView(folder: folder)
+            NoteFolderView(folder: folder, onOpenNote: onOpenNote)
         }
+    }
+
+    func navigateToNote(_ note: NoteDocument) {
+        onOpenNote?(note)
     }
 }
 
