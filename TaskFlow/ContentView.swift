@@ -788,7 +788,7 @@ struct ProjectDetailView: View {
                 Divider().padding(.horizontal, 32)
 
                 // 노트 + 폴더 섹션 (통합)
-                ProjectNotesAndFoldersSection(project: project)
+                ProjectNotesAndFoldersSection(project: project, onOpenNote: onOpenNote)
                 Divider().padding(.horizontal, 32)
 
                 // 시험일 섹션 (학교 소속 프로젝트만)
