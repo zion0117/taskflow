@@ -77,6 +77,7 @@ struct MacContentView: View {
     @State private var sidebarTapCount = 0
     @State private var showAddArea = false
     @State private var showAddProject: Area? = nil
+    @State private var showAddSubProject: Project? = nil
 
     var body: some View {
         NavigationSplitView {
