@@ -71,6 +71,7 @@ struct MacContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var areas: [Area]
     @Query private var projects: [Project]
+    @Query private var noteDocuments: [NoteDocument]
     var timerManager: TimerManager
 
     @State private var selection: SidebarItem? = .today
@@ -109,12 +110,16 @@ struct MacContentView: View {
                     WishlistView()
                 case .project(let id):
                     if let project = projects.first(where: { $0.id == id }) {
-                        ProjectDetailView(project: project, timerManager: timerManager)
+                        ProjectDetailView(project: project, timerManager: timerManager, onOpenNote: openNote)
                             .id(project.id)
                     }
                 case .area(let id):
                     if let area = areas.first(where: { $0.id == id }) {
                         AreaDetailView(area: area, timerManager: timerManager)
+                    }
+                case .noteDocument(let id):
+                    if let doc = noteDocuments.first(where: { $0.id == id }) {
+                        NoteEditorView(document: doc)
                     }
                 case .none:
                     TodayView(timerManager: timerManager, showAddTask: .constant(nil))
@@ -126,6 +131,11 @@ struct MacContentView: View {
         .navigationSplitViewStyle(.balanced)
         .sheet(isPresented: $showAddArea) { AddAreaSheet() }
         .sheet(item: $showAddProject) { AddProjectSheet(area: $0) }
+    }
+
+    func openNote(_ note: NoteDocument) {
+        selection = .noteDocument(note.id)
+        sidebarTapCount += 1
     }
 }
 
