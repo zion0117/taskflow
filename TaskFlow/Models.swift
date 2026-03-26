@@ -560,6 +560,26 @@ class NoteDocument {
     }
 }
 
+// MARK: - NoteBlock (노트 블록 - 텍스트/이미지/텍스트박스)
+@Model
+class NoteBlock {
+    var id: UUID
+    var order: Int
+    var blockType: String   // "text" | "image" | "textbox"
+    var content: String
+    var indentLevel: Int    // 0~3 사이클 (1. → 1) → (1) → ①)
+    var imageData: Data?
+    var document: NoteDocument?
+
+    init(order: Int, blockType: String = "text", content: String = "", indentLevel: Int = 0) {
+        self.id = UUID()
+        self.order = order
+        self.blockType = blockType
+        self.content = content
+        self.indentLevel = indentLevel
+    }
+}
+
 // MARK: - SpreadsheetCell (스프레드시트 셀)
 @Model
 class SpreadsheetCell {
