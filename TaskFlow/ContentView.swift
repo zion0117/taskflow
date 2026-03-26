@@ -1178,15 +1178,20 @@ struct NoteFolderView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
     @Bindable var folder: NoteFolder
+    var onOpenNote: ((NoteDocument) -> Void)? = nil
     @State private var showAddNote = false
     @State private var newTitle = ""
-    @State private var openNote: NoteDocument? = nil
 
     var body: some View {
         NavigationStack {
             List {
                 ForEach(folder.notes.sorted { $0.updatedAt > $1.updatedAt }) { note in
-                    Button { openNote = note } label: {
+                    Button {
+                        dismiss()
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                            onOpenNote?(note)
+                        }
+                    } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "doc.text")
                                 .font(.system(size: 13))
@@ -1235,18 +1240,11 @@ struct NoteFolderView: View {
                 try? modelContext.save()
                 showAddNote = false
                 newTitle = ""
-                openNote = doc
+                dismiss()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    onOpenNote?(doc)
+                }
             } onCancel: { showAddNote = false; newTitle = "" }
-        }
-        .sheet(item: $openNote) { note in
-            NavigationStack {
-                NoteEditorView(document: note)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("닫기") { openNote = nil }
-                        }
-                    }
-            }
         }
     }
 }
