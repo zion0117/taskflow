@@ -35,6 +35,13 @@ class Project {
     var midtermDate: Date?
     var finalDate: Date?
 
+    // 하위 폴더 계층
+    var parentProject: Project?
+    @Relationship(deleteRule: .cascade) var subProjects: [Project] = []
+
+    // 프로젝트에 연결된 노트 문서
+    @Relationship(deleteRule: .cascade) var noteDocuments: [NoteDocument] = []
+
     init(name: String, colorHex: String = "007AFF", area: Area? = nil, order: Int = 0) {
         self.id = UUID()
         self.name = name
