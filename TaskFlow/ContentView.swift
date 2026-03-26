@@ -736,15 +736,10 @@ struct ProjectDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var project: Project
     var timerManager: TimerManager
-    var onAddSubProject: (() -> Void)? = nil
 
     @State private var newTaskTitle = ""
     @State private var isAddingTask = false
     @State private var selectedTask: Task? = nil
-    @State private var showAddNote = false
-    @State private var newNoteTitle = ""
-    @State private var newNoteType = "spreadsheet"
-    @State private var selectedNote: NoteDocument? = nil
 
     var pendingTasks: [Task] { project.tasks.filter { !$0.isCompleted } }
     var completedTasks: [Task] { project.tasks.filter { $0.isCompleted } }
@@ -758,20 +753,15 @@ struct ProjectDetailView: View {
                 // 프로젝트 헤더
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 10) {
-                        Image(systemName: project.parentProject != nil ? "folder.badge.plus" : "folder.fill")
+                        Image(systemName: "folder.fill")
                             .font(.system(size: 20))
                             .foregroundStyle(projColor)
                         Text(project.name)
                             .font(.system(size: 24, weight: .bold))
-                        if let parent = project.parentProject {
-                            Text("in \(parent.name)")
-                                .font(.system(size: 12))
-                                .foregroundStyle(.secondary)
-                        }
                     }
 
-                    // Notes
-                    TextField("Notes", text: Binding(
+                    // 프로젝트 메모
+                    TextField("메모", text: Binding(
                         get: { project.notes },
                         set: { project.notes = $0; try? modelContext.save() }
                     ), axis: .vertical)
@@ -785,14 +775,8 @@ struct ProjectDetailView: View {
 
                 Divider().padding(.horizontal, 32)
 
-                // 서브 프로젝트 섹션
-                if !project.subProjects.isEmpty || onAddSubProject != nil {
-                    SubProjectsSection(project: project, onAddSubProject: onAddSubProject)
-                    Divider().padding(.horizontal, 32)
-                }
-
-                // 필기노트 섹션
-                ProjectNotesSection(project: project)
+                // 노트 + 폴더 섹션 (통합)
+                ProjectNotesAndFoldersSection(project: project)
                 Divider().padding(.horizontal, 32)
 
                 // 시험일 섹션 (학교 소속 프로젝트만)
