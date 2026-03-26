@@ -605,6 +605,7 @@ class MindMapNode {
     var y: Double
     var parentNodeId: UUID?
     var document: NoteDocument?
+    var noteBlock: NoteBlock?    // 인라인 마인드맵 블록에 연결
 
     init(text: String, x: Double, y: Double, parentNodeId: UUID? = nil) {
         self.id = UUID()
