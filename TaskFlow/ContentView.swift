@@ -761,10 +761,15 @@ struct ProjectDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var project: Project
     var timerManager: TimerManager
+    var onAddSubProject: (() -> Void)? = nil
 
     @State private var newTaskTitle = ""
     @State private var isAddingTask = false
     @State private var selectedTask: Task? = nil
+    @State private var showAddNote = false
+    @State private var newNoteTitle = ""
+    @State private var newNoteType = "spreadsheet"
+    @State private var selectedNote: NoteDocument? = nil
 
     var pendingTasks: [Task] { project.tasks.filter { !$0.isCompleted } }
     var completedTasks: [Task] { project.tasks.filter { $0.isCompleted } }
@@ -778,11 +783,16 @@ struct ProjectDetailView: View {
                 // 프로젝트 헤더
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 10) {
-                        Image(systemName: "folder.fill")
+                        Image(systemName: project.parentProject != nil ? "folder.badge.plus" : "folder.fill")
                             .font(.system(size: 20))
                             .foregroundStyle(projColor)
                         Text(project.name)
-                            .font(.system(size: 26, weight: .bold))
+                            .font(.system(size: 24, weight: .bold))
+                        if let parent = project.parentProject {
+                            Text("in \(parent.name)")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.secondary)
+                        }
                     }
 
                     // Notes
@@ -790,7 +800,7 @@ struct ProjectDetailView: View {
                         get: { project.notes },
                         set: { project.notes = $0; try? modelContext.save() }
                     ), axis: .vertical)
-                    .font(.system(size: 14))
+                    .font(.system(size: 13))
                     .foregroundStyle(.secondary)
                     .textFieldStyle(.plain)
                 }
@@ -798,6 +808,16 @@ struct ProjectDetailView: View {
                 .padding(.top, 28)
                 .padding(.bottom, 20)
 
+                Divider().padding(.horizontal, 32)
+
+                // 서브 프로젝트 섹션
+                if !project.subProjects.isEmpty || onAddSubProject != nil {
+                    SubProjectsSection(project: project, onAddSubProject: onAddSubProject)
+                    Divider().padding(.horizontal, 32)
+                }
+
+                // 필기노트 섹션
+                ProjectNotesSection(project: project)
                 Divider().padding(.horizontal, 32)
 
                 // 시험일 섹션 (학교 소속 프로젝트만)
@@ -823,21 +843,21 @@ struct ProjectDetailView: View {
                         HStack(spacing: 14) {
                             Circle()
                                 .strokeBorder(projColor, lineWidth: 1.5)
-                                .frame(width: 22, height: 22)
+                                .frame(width: 20, height: 20)
                             TextField("새 태스크", text: $newTaskTitle)
-                                .font(.system(size: 14))
+                                .font(.system(size: 13))
                                 .textFieldStyle(.plain)
                                 .onSubmit { submitNewTask() }
                             Spacer()
                             Button { isAddingTask = false } label: {
                                 Image(systemName: "xmark")
-                                    .font(.system(size: 11))
+                                    .font(.system(size: 10))
                                     .foregroundStyle(.secondary)
                             }
                             .buttonStyle(.plain)
                         }
                         .padding(.horizontal, 32)
-                        .padding(.vertical, 10)
+                        .padding(.vertical, 9)
                     }
                 }
 
@@ -845,13 +865,13 @@ struct ProjectDetailView: View {
                 if !completedTasks.isEmpty {
                     HStack {
                         Text("완료됨")
-                            .font(.system(size: 12, weight: .semibold))
+                            .font(.system(size: 11, weight: .semibold))
                             .foregroundStyle(.secondary)
                         Spacer()
                     }
                     .padding(.horizontal, 32)
-                    .padding(.top, 20)
-                    .padding(.bottom, 6)
+                    .padding(.top, 18)
+                    .padding(.bottom, 5)
 
                     ForEach(completedTasks) { task in
                         ThingsTaskRow(
