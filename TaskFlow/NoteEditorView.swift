@@ -9,10 +9,15 @@ struct NoteEditorView: View {
     @Bindable var document: NoteDocument
     @FocusState private var focusedId: UUID?
     @State private var showImageImporter = false
-    @State private var showMindMap = false
 
     var sortedBlocks: [NoteBlock] {
         document.blocks.sorted { $0.order < $1.order }
+    }
+
+    /// 포커스된 블록 (없으면 마지막 블록)
+    var anchorBlock: NoteBlock? {
+        if let fid = focusedId, let b = document.blocks.first(where: { $0.id == fid }) { return b }
+        return sortedBlocks.last
     }
 
     var body: some View {
@@ -44,7 +49,7 @@ struct NoteEditorView: View {
                         allBlocks: sortedBlocks,
                         focusedId: $focusedId,
                         onReturn: {
-                            let nb = insertBlock(after: block, inheritIndent: true)
+                            let nb = insertBlock(after: block, type: "text", inheritIndent: true)
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { focusedId = nb.id }
                         },
                         onIndent: { indentBlock(block) },
@@ -64,7 +69,7 @@ struct NoteEditorView: View {
                     .frame(maxWidth: .infinity).frame(height: 120)
                     .contentShape(Rectangle())
                     .onTapGesture {
-                        let nb = insertBlock(after: sortedBlocks.last, inheritIndent: false)
+                        let nb = insertBlock(after: sortedBlocks.last, type: "text", inheritIndent: false)
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { focusedId = nb.id }
                     }
             }
@@ -73,39 +78,27 @@ struct NoteEditorView: View {
         #if os(macOS)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
-                // 들여쓰기 (현재 포커스된 텍스트 블록에만)
+                // 들여쓰기
                 if let fid = focusedId,
                    let block = document.blocks.first(where: { $0.id == fid }),
                    block.blockType == "text" {
-                    Button { dedentBlock(block) } label: {
-                        Image(systemName: "decrease.indent")
-                    }
-                    .help("내어쓰기 (⌘[)")
-                    .keyboardShortcut("[", modifiers: .command)
-
-                    Button { indentBlock(block) } label: {
-                        Image(systemName: "increase.indent")
-                    }
-                    .help("들여쓰기 (⌘])")
-                    .keyboardShortcut("]", modifiers: .command)
-
+                    Button { dedentBlock(block) } label: { Image(systemName: "decrease.indent") }
+                        .help("내어쓰기 (⌘[)")
+                        .keyboardShortcut("[", modifiers: .command)
+                    Button { indentBlock(block) } label: { Image(systemName: "increase.indent") }
+                        .help("들여쓰기 (⌘])")
+                        .keyboardShortcut("]", modifiers: .command)
                     Divider()
                 }
 
-                Button { addTextBox() } label: {
-                    Label("텍스트박스", systemImage: "text.viewfinder")
-                }
-                .help("텍스트 박스 추가")
+                Button { insertTextBox() } label: { Label("텍스트박스", systemImage: "text.viewfinder") }
+                    .help("텍스트박스 삽입")
 
-                Button { showImageImporter = true } label: {
-                    Label("이미지", systemImage: "photo.badge.plus")
-                }
-                .help("이미지 추가")
+                Button { showImageImporter = true } label: { Label("이미지", systemImage: "photo.badge.plus") }
+                    .help("이미지 삽입")
 
-                Button { showMindMap = true } label: {
-                    Label("마인드맵", systemImage: "circle.hexagongrid")
-                }
-                .help("마인드맵 열기")
+                Button { insertMindMap() } label: { Label("마인드맵", systemImage: "circle.hexagongrid") }
+                    .help("마인드맵 삽입")
             }
         }
         #endif
@@ -114,20 +107,8 @@ struct NoteEditorView: View {
                url.startAccessingSecurityScopedResource() {
                 defer { url.stopAccessingSecurityScopedResource() }
                 if let data = try? Data(contentsOf: url) {
-                    insertImageBlock(data: data)
+                    insertImage(data: data)
                 }
-            }
-        }
-        .sheet(isPresented: $showMindMap) {
-            NavigationStack {
-                MindMapEditorView(document: document)
-                #if os(macOS)
-                    .toolbar {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button("닫기") { showMindMap = false }
-                        }
-                    }
-                #endif
             }
         }
         .onAppear {
@@ -142,12 +123,12 @@ struct NoteEditorView: View {
         }
     }
 
-    // MARK: - Block operations
+    // MARK: - Block Insert (포커스된 블록 다음에 삽입)
 
     @discardableResult
-    func insertBlock(after prev: NoteBlock?, inheritIndent: Bool) -> NoteBlock {
+    func insertBlock(after prev: NoteBlock?, type: String, inheritIndent: Bool) -> NoteBlock {
         let blocks = sortedBlocks
-        let indent = inheritIndent ? (prev?.indentLevel ?? 0) : 0
+        let indent = (inheritIndent && type == "text") ? (prev?.indentLevel ?? 0) : 0
         let newOrder: Int
 
         if let prev, let idx = blocks.firstIndex(where: { $0.id == prev.id }) {
@@ -157,7 +138,7 @@ struct NoteEditorView: View {
             newOrder = (blocks.map(\.order).max() ?? -1) + 1
         }
 
-        let b = NoteBlock(order: newOrder, blockType: "text", content: "", indentLevel: indent)
+        let b = NoteBlock(order: newOrder, blockType: type, content: "", indentLevel: indent)
         b.document = document
         document.blocks.append(b)
         modelContext.insert(b)
@@ -166,25 +147,25 @@ struct NoteEditorView: View {
         return b
     }
 
-    func insertImageBlock(data: Data) {
-        let maxOrder = (document.blocks.map(\.order).max() ?? -1) + 1
-        let b = NoteBlock(order: maxOrder, blockType: "image", content: "")
+    func insertImage(data: Data) {
+        let b = insertBlock(after: anchorBlock, type: "image", inheritIndent: false)
         b.imageData = data
-        b.document = document
-        document.blocks.append(b)
-        modelContext.insert(b)
-        document.updatedAt = Date()
         try? modelContext.save()
     }
 
-    func addTextBox() {
-        let maxOrder = (document.blocks.map(\.order).max() ?? -1) + 1
-        let b = NoteBlock(order: maxOrder, blockType: "textbox", content: "")
-        b.document = document
-        document.blocks.append(b)
-        modelContext.insert(b)
-        try? modelContext.save()
+    func insertTextBox() {
+        let b = insertBlock(after: anchorBlock, type: "textbox", inheritIndent: false)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { focusedId = b.id }
+    }
+
+    func insertMindMap() {
+        let b = insertBlock(after: anchorBlock, type: "mindmap", inheritIndent: false)
+        // 루트 노드 자동 생성
+        let root = MindMapNode(text: "주제", x: 200, y: 120)
+        root.noteBlock = b
+        b.mindMapNodes.append(root)
+        modelContext.insert(root)
+        try? modelContext.save()
     }
 
     func indentBlock(_ block: NoteBlock) {
@@ -230,24 +211,20 @@ struct NoteBlockRow: View {
         switch block.blockType {
         case "image":   imageView
         case "textbox": textBoxView
+        case "mindmap": InlineMindMapBlock(block: block)
         default:        textView
         }
     }
 
-    // MARK: 텍스트 블록 (개요 번호 포함)
+    // MARK: 텍스트 블록 (개요 번호)
     var textView: some View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
-            // 들여쓰기 공간
             Spacer().frame(width: CGFloat(block.indentLevel) * 22)
-
-            // 개요 번호
             Text(outlinePrefix())
                 .font(.system(size: 13, design: .monospaced))
                 .foregroundStyle(.secondary)
                 .frame(width: 30, alignment: .trailing)
                 .padding(.trailing, 5)
-
-            // 텍스트 필드
             TextField("", text: Binding(
                 get: { block.content },
                 set: { block.content = $0; try? modelContext.save() }
@@ -318,11 +295,9 @@ struct NoteBlockRow: View {
                 .padding(.horizontal, 40)
                 .padding(.vertical, 6)
                 .contextMenu {
-                    Button(role: .destructive) {
-                        block.imageData = nil
-                        block.blockType = "text"
-                        try? modelContext.save()
-                    } label: { Label("이미지 삭제", systemImage: "trash") }
+                    Button(role: .destructive) { onDeleteEmpty() } label: {
+                        Label("이미지 삭제", systemImage: "trash")
+                    }
                 }
         }
         #else
@@ -338,14 +313,14 @@ struct NoteBlockRow: View {
         #endif
     }
 
-    // MARK: 개요 번호 계산 (1. → 1) → (1) → ①)
+    // MARK: 개요 번호
     func outlinePrefix() -> String {
         guard let idx = allBlocks.firstIndex(where: { $0.id == block.id }) else { return "" }
         let level = block.indentLevel
         var count = 1
         for j in stride(from: idx - 1, through: 0, by: -1) {
             let prev = allBlocks[j]
-            if prev.blockType == "image" { continue }
+            if prev.blockType != "text" { continue }
             if prev.indentLevel < level { break }
             if prev.indentLevel == level { count += 1 }
         }
@@ -359,5 +334,230 @@ struct NoteBlockRow: View {
             return count <= 20 ? c[count - 1] : "(\(count))"
         default: return "\(count)."
         }
+    }
+}
+
+// MARK: - Inline Mind Map Block
+
+struct InlineMindMapBlock: View {
+    @Environment(\.modelContext) private var modelContext
+    @Bindable var block: NoteBlock
+
+    @State private var positions: [UUID: CGPoint] = [:]
+    @State private var selectedId: UUID? = nil
+    @State private var editingId: UUID? = nil
+    @State private var editText = ""
+
+    var nodes: [MindMapNode] { block.mindMapNodes }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // 마인드맵 캔버스
+            ZStack {
+                Color(white: 0.97)
+                    .onTapGesture { selectedId = nil }
+
+                // 연결선
+                Canvas { ctx, _ in
+                    for node in nodes {
+                        guard let pid = node.parentNodeId,
+                              let pPos = positions[pid],
+                              let nPos = positions[node.id] else { continue }
+                        var path = Path()
+                        path.move(to: pPos)
+                        let midX = (pPos.x + nPos.x) / 2
+                        path.addCurve(to: nPos,
+                                       control1: CGPoint(x: midX, y: pPos.y),
+                                       control2: CGPoint(x: midX, y: nPos.y))
+                        ctx.stroke(path, with: .color(.blue.opacity(0.4)),
+                                   style: StrokeStyle(lineWidth: 2, lineCap: .round))
+                    }
+                }
+                .allowsHitTesting(false)
+
+                // 노드들
+                ForEach(nodes) { node in
+                    InlineMindMapNodeView(
+                        node: node,
+                        position: Binding(
+                            get: { positions[node.id] ?? CGPoint(x: node.x, y: node.y) },
+                            set: { p in
+                                positions[node.id] = p
+                                node.x = p.x; node.y = p.y
+                            }
+                        ),
+                        isRoot: node.parentNodeId == nil,
+                        isSelected: selectedId == node.id,
+                        onTap: { selectedId = node.id },
+                        onDoubleTap: {
+                            selectedId = node.id
+                            editText = node.text
+                            editingId = node.id
+                        }
+                    )
+                }
+            }
+            .frame(height: 260)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+
+            // 하단 툴바
+            HStack(spacing: 12) {
+                if let selId = selectedId {
+                    Button { addChild(parentId: selId) } label: {
+                        Label("자식 추가", systemImage: "plus.circle")
+                            .font(.system(size: 12))
+                    }
+                    .buttonStyle(.plain)
+                    Button {
+                        editText = nodes.first(where: { $0.id == selId })?.text ?? ""
+                        editingId = selId
+                    } label: {
+                        Label("편집", systemImage: "pencil")
+                            .font(.system(size: 12))
+                    }
+                    .buttonStyle(.plain)
+                    Button { deleteNode(id: selId) } label: {
+                        Label("삭제", systemImage: "trash")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.red)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Button { addRoot() } label: {
+                        Label("루트 노드 추가", systemImage: "plus")
+                            .font(.system(size: 12))
+                    }
+                    .buttonStyle(.plain)
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(Color.secondary.opacity(0.06))
+        }
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.secondary.opacity(0.18), lineWidth: 1))
+        .padding(.horizontal, 40)
+        .padding(.vertical, 6)
+        .onAppear {
+            for node in nodes {
+                positions[node.id] = CGPoint(x: node.x, y: node.y)
+            }
+        }
+        .sheet(isPresented: Binding(
+            get: { editingId != nil },
+            set: { if !$0 { editingId = nil } }
+        )) {
+            NavigationStack {
+                Form { TextField("노드 텍스트", text: $editText) }
+                    .navigationTitle("노드 편집")
+                    #if os(iOS)
+                    .navigationBarTitleDisplayMode(.inline)
+                    #endif
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) { Button("취소") { editingId = nil } }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("완료") {
+                                if let id = editingId, let node = nodes.first(where: { $0.id == id }) {
+                                    node.text = editText
+                                }
+                                editingId = nil
+                                try? modelContext.save()
+                            }
+                        }
+                    }
+            }
+            .presentationDetents([.height(180)])
+        }
+    }
+
+    func addRoot() {
+        let node = MindMapNode(text: "새 노드", x: 200, y: 130)
+        node.noteBlock = block
+        block.mindMapNodes.append(node)
+        modelContext.insert(node)
+        positions[node.id] = CGPoint(x: node.x, y: node.y)
+        selectedId = node.id
+        editText = node.text
+        editingId = node.id
+        try? modelContext.save()
+    }
+
+    func addChild(parentId: UUID) {
+        guard let parent = nodes.first(where: { $0.id == parentId }) else { return }
+        let sib = nodes.filter { $0.parentNodeId == parentId }.count
+        let x = parent.x + 180
+        let y = parent.y + Double(sib) * 60 - Double(sib) * 30
+        let node = MindMapNode(text: "새 노드", x: x, y: y, parentNodeId: parentId)
+        node.noteBlock = block
+        block.mindMapNodes.append(node)
+        modelContext.insert(node)
+        positions[node.id] = CGPoint(x: x, y: y)
+        selectedId = node.id
+        editText = node.text
+        editingId = node.id
+        try? modelContext.save()
+    }
+
+    func deleteNode(id: UUID) {
+        var toDelete: [UUID] = []
+        func collect(_ nid: UUID) {
+            toDelete.append(nid)
+            nodes.filter { $0.parentNodeId == nid }.forEach { collect($0.id) }
+        }
+        collect(id)
+        for nid in toDelete {
+            if let node = nodes.first(where: { $0.id == nid }) {
+                modelContext.delete(node)
+                positions.removeValue(forKey: nid)
+            }
+        }
+        block.mindMapNodes.removeAll { toDelete.contains($0.id) }
+        selectedId = nil
+        try? modelContext.save()
+    }
+}
+
+// MARK: - Inline Mind Map Node
+
+struct InlineMindMapNodeView: View {
+    let node: MindMapNode
+    @Binding var position: CGPoint
+    let isRoot: Bool
+    let isSelected: Bool
+    let onTap: () -> Void
+    let onDoubleTap: () -> Void
+
+    @GestureState private var dragDelta: CGSize = .zero
+
+    var body: some View {
+        Text(node.text)
+            .font(.system(size: isRoot ? 14 : 12, weight: isRoot ? .bold : .medium))
+            .foregroundStyle(isRoot ? .white : .primary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 7)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isRoot ? Color.blue : Color.white)
+                    .shadow(color: isSelected ? .blue.opacity(0.4) : .black.opacity(0.1),
+                            radius: isSelected ? 6 : 3, x: 0, y: 1)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(isSelected ? Color.blue : Color.gray.opacity(0.2), lineWidth: isSelected ? 2 : 1)
+            )
+            .position(
+                x: position.x + dragDelta.width,
+                y: position.y + dragDelta.height
+            )
+            .gesture(
+                DragGesture(minimumDistance: 3)
+                    .updating($dragDelta) { val, state, _ in state = val.translation }
+                    .onEnded { val in
+                        position = CGPoint(x: position.x + val.translation.width,
+                                           y: position.y + val.translation.height)
+                    }
+            )
+            .onTapGesture(count: 2) { onDoubleTap() }
+            .onTapGesture(count: 1) { onTap() }
     }
 }
