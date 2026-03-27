@@ -171,6 +171,9 @@ struct NoteEditorView: View {
 
                 Button { insertPostit() } label: { Label("포스트잇", systemImage: "note.text") }
                     .help("포스트잇 삽입")
+
+                Button { showPDFImporter = true } label: { Label("PDF", systemImage: "doc.richtext") }
+                    .help("PDF 삽입 (페이지별 이미지)")
             }
         }
         #endif
