@@ -66,22 +66,26 @@ struct WeeklyScheduleView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // 요일 헤더 (항상 최상단)
-            dayHeader
-
             // 탭: 계획 / 실제
-            Picker("", selection: $tab) {
-                Text("계획").tag(0)
-                Text("실제").tag(1)
+            HStack(spacing: 0) {
+                dayHeader
             }
-            .pickerStyle(.segmented)
-            .padding(.horizontal, 20)
-            .padding(.vertical, 6)
 
-            // 실제 탭: 주 이동 + 합계
-            if tab == 1 {
-                weekNavigator
+            HStack {
+                Picker("", selection: $tab) {
+                    Text("계획").tag(0)
+                    Text("실제").tag(1)
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 140)
+
+                if tab == 1 {
+                    Spacer()
+                    weekNavigatorCompact
+                }
             }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 4)
 
             Divider()
 
@@ -104,7 +108,6 @@ struct WeeklyScheduleView: View {
                         if tab == 0 {
                             scheduleBlocks
                         } else {
-                            // 실제 탭: 계획 블록(반투명) + 실제 블록
                             ghostScheduleBlocks
                             actualBlocks
                         }
@@ -115,7 +118,7 @@ struct WeeklyScheduleView: View {
         }
         .navigationTitle("시간표")
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(.inline)
         #endif
         .toolbar {
             if tab == 0 {
