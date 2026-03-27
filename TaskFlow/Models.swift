@@ -637,6 +637,7 @@ class WeeklySchedule {
     var colorHex: String           // 블록 색상
     var location: String           // 장소 (선택)
     var memo: String               // 메모 (선택)
+    @Relationship(deleteRule: .cascade, inverse: \ScheduleTask.schedule) var scheduleTasks: [ScheduleTask] = []
 
     init(title: String, dayOfWeek: Int, startHour: Int, startMinute: Int = 0,
          endHour: Int, endMinute: Int = 0, colorHex: String = "3B82F6",
@@ -651,6 +652,14 @@ class WeeklySchedule {
         self.colorHex = colorHex
         self.location = location
         self.memo = memo
+    }
+
+    /// 특정 날짜의 태스크만 필터
+    func tasks(for date: Date) -> [ScheduleTask] {
+        let cal = Calendar.current
+        return scheduleTasks
+            .filter { cal.isDate($0.date, inSameDayAs: date) }
+            .sorted { $0.createdAt < $1.createdAt }
     }
 
     var startTimeString: String {
