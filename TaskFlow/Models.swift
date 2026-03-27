@@ -120,12 +120,23 @@ class TimeEntry {
     var id: UUID
     var startedAt: Date
     var endedAt: Date?
+    var isCommitted: Bool
     var task: Task?
 
     init(task: Task? = nil) {
         self.id = UUID()
         self.startedAt = Date()
         self.endedAt = nil
+        self.isCommitted = false
+        self.task = task
+    }
+
+    /// 수동 입력용 이니셜라이저
+    init(task: Task?, startedAt: Date, endedAt: Date, committed: Bool = false) {
+        self.id = UUID()
+        self.startedAt = startedAt
+        self.endedAt = endedAt
+        self.isCommitted = committed
         self.task = task
     }
 
