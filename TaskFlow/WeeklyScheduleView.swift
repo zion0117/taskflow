@@ -169,7 +169,7 @@ struct WeeklyScheduleView: View {
 
     private var weekNavigator: some View {
         HStack {
-            Button { weekOffset -= 1 } label: {
+            Button { weekOffset -= 1; hiddenScheduleIds.removeAll() } label: {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 14, weight: .medium))
             }
