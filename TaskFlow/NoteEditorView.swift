@@ -340,10 +340,10 @@ struct NoteBlockRow: View {
     var body: some View {
         switch block.blockType {
         case "image":   ResizableImageBlock(block: block, onDelete: onDeleteEmpty)
-        case "textbox": DraggableBlockWrapper(block: block) { textBoxView }
+        case "textbox": DraggableBlockWrapper(block: block) { textBoxContent }
         case "mindmap": DraggableBlockWrapper(block: block) { InlineMindMapBlock(block: block) }
         case "postit":  PostitBlock(block: block, onDelete: onDeleteEmpty)
-        default:        DraggableBlockWrapper(block: block) { textView }
+        default:        DraggableBlockWrapper(block: block, resizable: false) { textView }
         }
     }
 
