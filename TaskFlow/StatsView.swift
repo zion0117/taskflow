@@ -11,7 +11,7 @@ struct StatsView: View {
 
     enum StatTab: String, CaseIterable { case daily = "일간"; case weekly = "주간"; case monthly = "월간" }
 
-    var allEntries: [TimeEntry] { projects.flatMap { $0.tasks }.flatMap { $0.timeEntries } }
+    var allEntries: [TimeEntry] { projects.flatMap { $0.tasks }.flatMap { $0.timeEntries }.filter { $0.isCommitted } }
 
     var body: some View {
         ScrollView {
