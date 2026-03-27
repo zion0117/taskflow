@@ -101,13 +101,13 @@ struct WeeklyScheduleView: View {
             Divider()
 
             // 시간표 그리드
-            if (tab == 0 && schedules.isEmpty) || (tab == 1 && weekTimeBlocks.isEmpty) {
+            if tab == 0 && schedules.isEmpty {
                 Spacer()
                 VStack(spacing: 8) {
-                    Image(systemName: tab == 0 ? "calendar.badge.plus" : "clock")
+                    Image(systemName: "calendar.badge.plus")
                         .font(.system(size: 36))
                         .foregroundStyle(.tertiary)
-                    Text(tab == 0 ? "스케줄을 추가하세요" : "이 주의 기록이 없습니다")
+                    Text("스케줄을 추가하세요")
                         .font(.system(size: 14))
                         .foregroundStyle(.tertiary)
                 }
@@ -119,6 +119,8 @@ struct WeeklyScheduleView: View {
                         if tab == 0 {
                             scheduleBlocks
                         } else {
+                            // 실제 탭: 계획 블록(반투명) + 실제 블록
+                            ghostScheduleBlocks
                             actualBlocks
                         }
                     }
