@@ -13,24 +13,16 @@ struct NotesView: View {
     var body: some View {
         List {
             ForEach(documents) { doc in
+                #if os(iOS)
+                NavigationLink(value: doc.id) {
+                    noteRow(doc)
+                }
+                #else
                 Button { openNote = doc } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: noteIcon(doc))
-                            .font(.title3)
-                            .foregroundStyle(noteColor(doc))
-                            .frame(width: 32)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(doc.title)
-                                .font(.body)
-                                .foregroundStyle(.primary)
-                            Text(noteSubtitle(doc))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .padding(.vertical, 4)
+                    noteRow(doc)
                 }
                 .buttonStyle(.plain)
+                #endif
             }
             .onDelete { idxs in idxs.forEach { modelContext.delete(documents[$0]) } }
 
@@ -44,6 +36,14 @@ struct NotesView: View {
             }
         }
         .navigationTitle("노트")
+        #if os(iOS)
+        .navigationBarTitleDisplayMode(.large)
+        .navigationDestination(for: UUID.self) { docId in
+            if let doc = documents.first(where: { $0.id == docId }) {
+                noteEditorView(for: doc)
+            }
+        }
+        #endif
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button { showingAdd = true } label: { Image(systemName: "plus") }
@@ -56,9 +56,20 @@ struct NotesView: View {
                 try? modelContext.save()
                 showingAdd = false
                 newTitle = ""
+                #if os(iOS)
+                newNoteId = doc.id
+                #else
                 openNote = doc
+                #endif
             } onCancel: { showingAdd = false; newTitle = "" }
         }
+        #if os(iOS)
+        .navigationDestination(item: $newNoteId) { docId in
+            if let doc = documents.first(where: { $0.id == docId }) {
+                noteEditorView(for: doc)
+            }
+        }
+        #else
         .sheet(item: $openNote) { note in
             NavigationStack {
                 noteEditorView(for: note)
@@ -69,6 +80,25 @@ struct NotesView: View {
                     }
             }
         }
+        #endif
+    }
+
+    private func noteRow(_ doc: NoteDocument) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: noteIcon(doc))
+                .font(.title3)
+                .foregroundStyle(noteColor(doc))
+                .frame(width: 32)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(doc.title)
+                    .font(.body)
+                    .foregroundStyle(.primary)
+                Text(noteSubtitle(doc))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 4)
     }
 
     @ViewBuilder
