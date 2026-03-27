@@ -971,7 +971,6 @@ struct InlineMindMapBlock: View {
             .padding(.vertical, 6)
             .background(Color.secondary.opacity(0.06))
         }
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.secondary.opacity(0.18), lineWidth: 1))
         .onAppear {
             for node in nodes {
                 positions[node.id] = CGPoint(x: node.x, y: node.y)
