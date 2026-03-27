@@ -609,6 +609,10 @@ struct TaskRow: View {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                     task.isCompleted.toggle()
                     if task.isCompleted && isRunning { timerManager.stop() }
+                    // 반복 태스크: 완료 시 다음 태스크 자동 생성
+                    if task.isCompleted && !task.recurrence.isEmpty {
+                        spawnNextRecurrence()
+                    }
                     try? modelContext.save()
                 }
             }
