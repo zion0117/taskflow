@@ -490,18 +490,24 @@ struct InlineMindMapBlock: View {
     @State private var editingId: UUID? = nil
     @State private var editText = ""
 
+    // 포스트잇 색상 팔레트
+    private let postitColors: [(name: String, hex: String)] = [
+        ("노랑", "FEF3C7"), ("분홍", "FCE7F3"), ("연두", "D1FAE5"),
+        ("하늘", "DBEAFE"), ("보라", "EDE9FE"), ("주황", "FFEDD5")
+    ]
+
     var nodes: [MindMapNode] { block.mindMapNodes }
 
     var body: some View {
         VStack(spacing: 0) {
             // 마인드맵 캔버스
             ZStack {
-                Color(white: 0.97)
+                Color(.systemBackground)
                     .onTapGesture { selectedId = nil }
 
-                // 연결선
+                // 연결선 (node 타입만)
                 Canvas { ctx, _ in
-                    for node in nodes {
+                    for node in nodes where node.nodeType == "node" {
                         guard let pid = node.parentNodeId,
                               let pPos = positions[pid],
                               let nPos = positions[node.id] else { continue }
@@ -517,8 +523,29 @@ struct InlineMindMapBlock: View {
                 }
                 .allowsHitTesting(false)
 
-                // 노드들
-                ForEach(nodes) { node in
+                // 포스트잇 노드
+                ForEach(nodes.filter { $0.nodeType == "postit" }) { node in
+                    PostitNodeView(
+                        node: node,
+                        position: Binding(
+                            get: { positions[node.id] ?? CGPoint(x: node.x, y: node.y) },
+                            set: { p in
+                                positions[node.id] = p
+                                node.x = p.x; node.y = p.y
+                            }
+                        ),
+                        isSelected: selectedId == node.id,
+                        onTap: { selectedId = node.id },
+                        onDoubleTap: {
+                            selectedId = node.id
+                            editText = node.text
+                            editingId = node.id
+                        }
+                    )
+                }
+
+                // 일반 마인드맵 노드
+                ForEach(nodes.filter { $0.nodeType == "node" }) { node in
                     InlineMindMapNodeView(
                         node: node,
                         position: Binding(
@@ -544,20 +571,39 @@ struct InlineMindMapBlock: View {
 
             // 하단 툴바
             HStack(spacing: 12) {
-                if let selId = selectedId {
-                    Button { addChild(parentId: selId) } label: {
-                        Label("자식 추가", systemImage: "plus.circle")
-                            .font(.system(size: 12))
+                if let selId = selectedId, let selNode = nodes.first(where: { $0.id == selId }) {
+                    if selNode.nodeType == "node" {
+                        Button { addChild(parentId: selId) } label: {
+                            Label("자식 추가", systemImage: "plus.circle")
+                                .font(.system(size: 12))
+                        }
+                        .buttonStyle(.plain)
                     }
-                    .buttonStyle(.plain)
                     Button {
-                        editText = nodes.first(where: { $0.id == selId })?.text ?? ""
+                        editText = selNode.text
                         editingId = selId
                     } label: {
                         Label("편집", systemImage: "pencil")
                             .font(.system(size: 12))
                     }
                     .buttonStyle(.plain)
+
+                    // 포스트잇 색상 변경
+                    if selNode.nodeType == "postit" {
+                        Menu {
+                            ForEach(postitColors, id: \.hex) { c in
+                                Button(c.name) {
+                                    selNode.postitColor = c.hex
+                                    try? modelContext.save()
+                                }
+                            }
+                        } label: {
+                            Label("색상", systemImage: "paintpalette")
+                                .font(.system(size: 12))
+                        }
+                        .buttonStyle(.plain)
+                    }
+
                     Button { deleteNode(id: selId) } label: {
                         Label("삭제", systemImage: "trash")
                             .font(.system(size: 12))
@@ -566,7 +612,13 @@ struct InlineMindMapBlock: View {
                     .buttonStyle(.plain)
                 } else {
                     Button { addRoot() } label: {
-                        Label("루트 노드 추가", systemImage: "plus")
+                        Label("노드 추가", systemImage: "plus.circle")
+                            .font(.system(size: 12))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button { addPostit() } label: {
+                        Label("포스트잇", systemImage: "note.text")
                             .font(.system(size: 12))
                     }
                     .buttonStyle(.plain)
@@ -590,8 +642,8 @@ struct InlineMindMapBlock: View {
             set: { if !$0 { editingId = nil } }
         )) {
             NavigationStack {
-                Form { TextField("노드 텍스트", text: $editText) }
-                    .navigationTitle("노드 편집")
+                Form { TextField("텍스트", text: $editText) }
+                    .navigationTitle("편집")
                     #if os(iOS)
                     .navigationBarTitleDisplayMode(.inline)
                     #endif
@@ -614,6 +666,18 @@ struct InlineMindMapBlock: View {
 
     func addRoot() {
         let node = MindMapNode(text: "새 노드", x: 200, y: 130)
+        node.noteBlock = block
+        block.mindMapNodes.append(node)
+        modelContext.insert(node)
+        positions[node.id] = CGPoint(x: node.x, y: node.y)
+        selectedId = node.id
+        editText = node.text
+        editingId = node.id
+        try? modelContext.save()
+    }
+
+    func addPostit() {
+        let node = MindMapNode(text: "메모", x: 120, y: 80, nodeType: "postit")
         node.noteBlock = block
         block.mindMapNodes.append(node)
         modelContext.insert(node)
@@ -659,6 +723,55 @@ struct InlineMindMapBlock: View {
     }
 }
 
+// MARK: - Postit Node View (포스트잇)
+
+struct PostitNodeView: View {
+    let node: MindMapNode
+    @Binding var position: CGPoint
+    let isSelected: Bool
+    let onTap: () -> Void
+    let onDoubleTap: () -> Void
+
+    @GestureState private var dragDelta: CGSize = .zero
+
+    private var bgColor: Color {
+        Color(hex: node.postitColor) ?? Color.yellow.opacity(0.3)
+    }
+
+    var body: some View {
+        Text(node.text)
+            .font(.system(size: 12))
+            .foregroundStyle(.primary)
+            .multilineTextAlignment(.leading)
+            .frame(minWidth: 80, maxWidth: 140, alignment: .topLeading)
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(bgColor)
+                    .shadow(color: isSelected ? .blue.opacity(0.4) : .black.opacity(0.12),
+                            radius: isSelected ? 5 : 3, x: 1, y: 2)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
+            )
+            .position(
+                x: position.x + dragDelta.width,
+                y: position.y + dragDelta.height
+            )
+            .gesture(
+                DragGesture(minimumDistance: 3)
+                    .updating($dragDelta) { val, state, _ in state = val.translation }
+                    .onEnded { val in
+                        position = CGPoint(x: position.x + val.translation.width,
+                                           y: position.y + val.translation.height)
+                    }
+            )
+            .onTapGesture(count: 2) { onDoubleTap() }
+            .onTapGesture(count: 1) { onTap() }
+    }
+}
+
 // MARK: - Inline Mind Map Node
 
 struct InlineMindMapNodeView: View {
@@ -679,7 +792,7 @@ struct InlineMindMapNodeView: View {
             .padding(.vertical, 7)
             .background(
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(isRoot ? Color.blue : Color.white)
+                    .fill(isRoot ? Color.blue : Color(.systemBackground))
                     .shadow(color: isSelected ? .blue.opacity(0.4) : .black.opacity(0.1),
                             radius: isSelected ? 6 : 3, x: 0, y: 1)
             )
