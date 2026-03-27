@@ -921,6 +921,20 @@ struct InlineMindMapBlock: View {
                             .font(.system(size: 12))
                     }
                     .buttonStyle(.plain)
+                    Menu {
+                        ForEach(nodeColorPalette, id: \.hex) { c in
+                            Button(c.name) {
+                                if let node = nodes.first(where: { $0.id == selId }) {
+                                    node.colorHex = c.hex
+                                    try? modelContext.save()
+                                }
+                            }
+                        }
+                    } label: {
+                        Label("색상", systemImage: "paintpalette")
+                            .font(.system(size: 12))
+                    }
+                    .buttonStyle(.plain)
                     Button { deleteNode(id: selId) } label: {
                         Label("삭제", systemImage: "trash")
                             .font(.system(size: 12))
