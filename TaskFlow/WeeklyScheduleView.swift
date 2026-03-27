@@ -713,6 +713,171 @@ struct ScheduleEditSheet: View {
     }
 }
 
+// MARK: - Schedule Block Info (태스크 시트용)
+
+struct ScheduleBlockInfo: Identifiable {
+    let id = UUID()
+    let schedule: WeeklySchedule
+    let date: Date
+}
+
+// MARK: - Schedule Task Sheet (날짜별 할 일)
+
+struct ScheduleTaskSheet: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
+    @Bindable var schedule: WeeklySchedule
+    let date: Date
+    @State private var newTaskTitle = ""
+    @FocusState private var isInputFocused: Bool
+
+    private var tasks: [ScheduleTask] {
+        schedule.tasks(for: date)
+    }
+
+    private var dateString: String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "ko_KR")
+        f.dateFormat = "M월 d일 (E)"
+        return f.string(from: date)
+    }
+
+    private var color: Color {
+        Color(hex: schedule.colorHex) ?? .blue
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                // 헤더 카드
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 0) {
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(color)
+                            .frame(width: 4, height: 36)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(schedule.title)
+                                .font(.system(size: 17, weight: .bold))
+                            HStack(spacing: 10) {
+                                Text(dateString)
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(.secondary)
+                                Text("\(schedule.startTimeString) ~ \(schedule.endTimeString)")
+                                    .font(.system(size: 13, design: .monospaced))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .padding(.leading, 10)
+                        Spacer()
+                    }
+                    if !schedule.location.isEmpty {
+                        Label(schedule.location, systemImage: "mappin")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                            .padding(.leading, 14)
+                    }
+                }
+                .padding(16)
+                .background(color.opacity(0.08))
+
+                Divider()
+
+                // 태스크 리스트
+                List {
+                    ForEach(tasks) { task in
+                        HStack(spacing: 10) {
+                            Button {
+                                task.isCompleted.toggle()
+                                try? modelContext.save()
+                            } label: {
+                                Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                                    .font(.system(size: 20))
+                                    .foregroundStyle(task.isCompleted ? color : .secondary.opacity(0.4))
+                            }
+                            .buttonStyle(.plain)
+
+                            Text(task.title)
+                                .font(.system(size: 15))
+                                .strikethrough(task.isCompleted)
+                                .foregroundStyle(task.isCompleted ? .secondary : .primary)
+
+                            Spacer()
+                        }
+                        .padding(.vertical, 2)
+                    }
+                    .onDelete { idxs in
+                        for i in idxs {
+                            modelContext.delete(tasks[i])
+                        }
+                        try? modelContext.save()
+                    }
+
+                    if tasks.isEmpty {
+                        HStack {
+                            Spacer()
+                            Text("할 일이 없습니다")
+                                .font(.system(size: 14))
+                                .foregroundStyle(.tertiary)
+                            Spacer()
+                        }
+                        .listRowBackground(Color.clear)
+                        .padding(.vertical, 20)
+                    }
+                }
+                .listStyle(.plain)
+
+                Divider()
+
+                // 입력 바
+                HStack(spacing: 10) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundStyle(color.opacity(0.6))
+                    TextField("할 일 추가", text: $newTaskTitle)
+                        .font(.system(size: 15))
+                        .textFieldStyle(.plain)
+                        .focused($isInputFocused)
+                        .onSubmit { addTask() }
+                    if !newTaskTitle.isEmpty {
+                        Button { addTask() } label: {
+                            Image(systemName: "arrow.up.circle.fill")
+                                .font(.system(size: 22))
+                                .foregroundStyle(color)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(.bar)
+            }
+            .navigationTitle("할 일")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("완료") { dismiss() }
+                }
+            }
+        }
+        #if os(iOS)
+        .presentationDetents([.medium, .large])
+        #endif
+    }
+
+    private func addTask() {
+        let title = newTaskTitle.trimmingCharacters(in: .whitespaces)
+        guard !title.isEmpty else { return }
+        let task = ScheduleTask(title: title, date: date)
+        task.schedule = schedule
+        schedule.scheduleTasks.append(task)
+        modelContext.insert(task)
+        try? modelContext.save()
+        newTaskTitle = ""
+    }
+}
+
 // MARK: - Quick Add (같은 수업 다른 요일에 복사)
 
 extension WeeklyScheduleView {
