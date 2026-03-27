@@ -457,8 +457,7 @@ struct NoteBlockRow: View {
         .font(.system(size: 14))
         .scrollDisabled(true)
         .padding(10)
-        .background(Color.secondary.opacity(0.06))
-        .overlay(RoundedRectangle(cornerRadius: 7).stroke(Color.secondary.opacity(0.18), lineWidth: 1))
+        .background(Color.blue.opacity(0.06))
         .clipShape(RoundedRectangle(cornerRadius: 7))
     }
 
