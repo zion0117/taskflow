@@ -9,6 +9,7 @@ struct NotesView: View {
     @State private var showingAdd = false
     @State private var newTitle = ""
     @State private var openNote: NoteDocument? = nil
+    @State private var newNoteId: UUID? = nil
 
     var body: some View {
         List {
