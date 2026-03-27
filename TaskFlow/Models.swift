@@ -560,18 +560,19 @@ class NoteDocument {
     }
 }
 
-// MARK: - NoteBlock (노트 블록 - 텍스트/이미지/텍스트박스/마인드맵)
+// MARK: - NoteBlock (노트 블록 - 텍스트/이미지/텍스트박스/마인드맵/포스트잇)
 @Model
 class NoteBlock {
     var id: UUID
     var order: Int
-    var blockType: String   // "text" | "image" | "textbox" | "mindmap"
+    var blockType: String   // "text" | "image" | "textbox" | "mindmap" | "postit"
     var content: String
     var indentLevel: Int    // 0~3 사이클 (1. → 1) → (1) → ①)
     var imageData: Data?
     var imageWidth: Double = 0   // 0 = 기본(자동), 그 외 = 사용자 지정 너비
-    var imageOffsetX: Double = 0 // 이미지 수평 오프셋
-    var imageOffsetY: Double = 0 // 이미지 수직 오프셋
+    var imageOffsetX: Double = 0 // 이미지/포스트잇 수평 오프셋
+    var imageOffsetY: Double = 0 // 이미지/포스트잇 수직 오프셋
+    var postitColor: String = "FEF3C7"  // 포스트잇 배경색 hex
     var document: NoteDocument?
     @Relationship(deleteRule: .cascade, inverse: \MindMapNode.noteBlock) var mindMapNodes: [MindMapNode] = []
 
