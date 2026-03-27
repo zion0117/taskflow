@@ -66,26 +66,30 @@ struct WeeklyScheduleView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // 탭: 계획 / 실제
+            // 세그먼트 + 요일 한 줄
             HStack(spacing: 0) {
-                dayHeader
-            }
-
-            HStack {
+                // 시간 라벨 영역에 세그먼트
                 Picker("", selection: $tab) {
                     Text("계획").tag(0)
                     Text("실제").tag(1)
                 }
                 .pickerStyle(.segmented)
-                .frame(width: 140)
+                .frame(width: 80)
+                .padding(.leading, 4)
 
-                if tab == 1 {
+                // 요일 헤더
+                dayHeader
+            }
+            .padding(.vertical, 2)
+
+            if tab == 1 {
+                HStack {
                     Spacer()
                     weekNavigatorCompact
                 }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 2)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 4)
 
             Divider()
 
