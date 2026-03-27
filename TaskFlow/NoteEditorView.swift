@@ -25,6 +25,7 @@ struct NoteEditorView: View {
     @Bindable var document: NoteDocument
     @FocusState private var focusedId: UUID?
     @State private var showImageImporter = false
+    @State private var showPDFImporter = false
 
     var sortedBlocks: [NoteBlock] {
         document.blocks.sorted { $0.order < $1.order }
