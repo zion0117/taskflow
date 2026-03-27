@@ -117,7 +117,7 @@ struct MacContentView: View {
                     WeeklyScheduleView()
                 case .project(let id):
                     if let project = projects.first(where: { $0.id == id }) {
-                        ProjectDetailView(project: project, timerManager: timerManager, onOpenNote: openNote)
+                        ProjectDetailView(project: project, timerManager: timerManager)
                             .id(project.id)
                     }
                 case .area(let id):
