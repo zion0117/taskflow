@@ -141,6 +141,24 @@ struct NoteEditorView: View {
                 if let fid = focusedId,
                    let block = document.blocks.first(where: { $0.id == fid }),
                    block.blockType == "text" {
+                    Menu {
+                        ForEach(textColorPalette, id: \.hex) { c in
+                            Button(c.name) { block.textColorHex = c.hex; try? modelContext.save() }
+                        }
+                    } label: {
+                        Image(systemName: "textformat")
+                            .font(.system(size: 16))
+                            .foregroundStyle(block.textColorHex.isEmpty ? .secondary : (Color(hex: block.textColorHex) ?? .secondary))
+                    }
+                    Menu {
+                        ForEach(highlightPalette, id: \.hex) { c in
+                            Button(c.name) { block.highlightHex = c.hex; try? modelContext.save() }
+                        }
+                    } label: {
+                        Image(systemName: "highlighter")
+                            .font(.system(size: 16))
+                            .foregroundStyle(block.highlightHex.isEmpty ? .secondary : (Color(hex: block.highlightHex) ?? .secondary))
+                    }
                     Button { dedentBlock(block) } label: {
                         Image(systemName: "decrease.indent")
                             .font(.system(size: 16))
