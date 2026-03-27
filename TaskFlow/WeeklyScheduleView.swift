@@ -226,71 +226,197 @@ struct ScheduleEditSheet: View {
         }
     }
 
+    private var previewColor: Color {
+        Color(hex: selectedColor) ?? .blue
+    }
+
     var body: some View {
         NavigationStack {
-            Form {
-                Section("기본 정보") {
-                    TextField("수업/일정 이름", text: $title)
-                    TextField("장소 (선택)", text: $location)
-                    TextField("메모 (선택)", text: $memo)
-                }
-
-                Section("요일") {
-                    Picker("요일", selection: $dayOfWeek) {
-                        ForEach(0..<7, id: \.self) { d in
-                            Text(WeeklySchedule.dayNames[d]).tag(d)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                }
-
-                Section("시간") {
-                    HStack {
-                        Text("시작")
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Picker("시", selection: $startHour) {
-                            ForEach(0..<24, id: \.self) { h in Text("\(h)시").tag(h) }
-                        }
-                        .pickerStyle(.menu)
-                        Picker("분", selection: $startMinute) {
-                            ForEach([0, 10, 15, 20, 30, 40, 45, 50], id: \.self) { m in
-                                Text(String(format: "%02d분", m)).tag(m)
+            ScrollView {
+                VStack(spacing: 20) {
+                    // 미리보기 카드
+                    HStack(spacing: 0) {
+                        RoundedRectangle(cornerRadius: 3)
+                            .fill(previewColor)
+                            .frame(width: 5)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(title.isEmpty ? "수업 이름" : title)
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(title.isEmpty ? .tertiary : .primary)
+                            HStack(spacing: 12) {
+                                if !location.isEmpty {
+                                    Label(location, systemImage: "mappin")
+                                        .font(.system(size: 12))
+                                        .foregroundStyle(.secondary)
+                                }
+                                Text("\(String(format: "%d:%02d", startHour, startMinute)) ~ \(String(format: "%d:%02d", endHour, endMinute))")
+                                    .font(.system(size: 12, design: .monospaced))
+                                    .foregroundStyle(.secondary)
                             }
                         }
-                        .pickerStyle(.menu)
-                    }
-                    HStack {
-                        Text("종료")
-                            .foregroundStyle(.secondary)
+                        .padding(.leading, 12)
                         Spacer()
-                        Picker("시", selection: $endHour) {
-                            ForEach(0..<24, id: \.self) { h in Text("\(h)시").tag(h) }
-                        }
-                        .pickerStyle(.menu)
-                        Picker("분", selection: $endMinute) {
-                            ForEach([0, 10, 15, 20, 30, 40, 45, 50], id: \.self) { m in
-                                Text(String(format: "%02d분", m)).tag(m)
+                    }
+                    .padding(14)
+                    .background(RoundedRectangle(cornerRadius: 12).fill(previewColor.opacity(0.08)))
+                    .padding(.horizontal, 20)
+
+                    // 입력 필드
+                    VStack(spacing: 16) {
+                        // 이름 & 장소
+                        VStack(spacing: 0) {
+                            fieldRow {
+                                Image(systemName: "textformat")
+                                    .frame(width: 24)
+                                    .foregroundStyle(.secondary)
+                                TextField("수업/일정 이름", text: $title)
+                                    .font(.system(size: 15))
+                            }
+                            Divider().padding(.leading, 44)
+                            fieldRow {
+                                Image(systemName: "mappin")
+                                    .frame(width: 24)
+                                    .foregroundStyle(.secondary)
+                                TextField("장소 (선택)", text: $location)
+                                    .font(.system(size: 15))
+                            }
+                            Divider().padding(.leading, 44)
+                            fieldRow {
+                                Image(systemName: "pencil")
+                                    .frame(width: 24)
+                                    .foregroundStyle(.secondary)
+                                TextField("메모 (선택)", text: $memo)
+                                    .font(.system(size: 15))
                             }
                         }
-                        .pickerStyle(.menu)
-                    }
-                }
+                        .background(RoundedRectangle(cornerRadius: 12).fill(Color.secondary.opacity(0.06)))
+                        .padding(.horizontal, 20)
 
-                Section("색상") {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 9), spacing: 10) {
-                        ForEach(WeeklySchedule.colorPresets, id: \.hex) { preset in
-                            Circle()
-                                .fill(Color(hex: preset.hex) ?? .blue)
-                                .frame(width: 28, height: 28)
-                                .overlay(
-                                    Circle().stroke(Color.primary, lineWidth: selectedColor == preset.hex ? 2.5 : 0)
-                                )
-                                .onTapGesture { selectedColor = preset.hex }
+                        // 요일
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("요일")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .padding(.leading, 24)
+
+                            HStack(spacing: 8) {
+                                ForEach(0..<7, id: \.self) { d in
+                                    Button {
+                                        dayOfWeek = d
+                                    } label: {
+                                        Text(WeeklySchedule.dayNames[d])
+                                            .font(.system(size: 14, weight: dayOfWeek == d ? .bold : .medium))
+                                            .foregroundStyle(dayOfWeek == d ? .white : (d >= 5 ? .red.opacity(0.6) : .primary))
+                                            .frame(maxWidth: .infinity)
+                                            .frame(height: 36)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .fill(dayOfWeek == d ? previewColor : Color.secondary.opacity(0.06))
+                                            )
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                            .padding(.horizontal, 20)
+                        }
+
+                        // 시간
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("시간")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .padding(.leading, 24)
+
+                            VStack(spacing: 0) {
+                                // 시작
+                                HStack {
+                                    Text("시작")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(.secondary)
+                                        .frame(width: 40, alignment: .leading)
+                                    Spacer()
+                                    Picker("", selection: $startHour) {
+                                        ForEach(6..<24, id: \.self) { h in
+                                            Text(String(format: "%02d", h)).tag(h)
+                                        }
+                                    }
+                                    .pickerStyle(.wheel)
+                                    .frame(width: 60, height: 80)
+                                    .clipped()
+                                    Text(":")
+                                        .font(.system(size: 18, weight: .medium))
+                                    Picker("", selection: $startMinute) {
+                                        ForEach([0, 10, 15, 20, 30, 40, 45, 50], id: \.self) { m in
+                                            Text(String(format: "%02d", m)).tag(m)
+                                        }
+                                    }
+                                    .pickerStyle(.wheel)
+                                    .frame(width: 60, height: 80)
+                                    .clipped()
+                                }
+                                .padding(.horizontal, 16)
+
+                                Divider().padding(.horizontal, 16)
+
+                                // 종료
+                                HStack {
+                                    Text("종료")
+                                        .font(.system(size: 14))
+                                        .foregroundStyle(.secondary)
+                                        .frame(width: 40, alignment: .leading)
+                                    Spacer()
+                                    Picker("", selection: $endHour) {
+                                        ForEach(6..<24, id: \.self) { h in
+                                            Text(String(format: "%02d", h)).tag(h)
+                                        }
+                                    }
+                                    .pickerStyle(.wheel)
+                                    .frame(width: 60, height: 80)
+                                    .clipped()
+                                    Text(":")
+                                        .font(.system(size: 18, weight: .medium))
+                                    Picker("", selection: $endMinute) {
+                                        ForEach([0, 10, 15, 20, 30, 40, 45, 50], id: \.self) { m in
+                                            Text(String(format: "%02d", m)).tag(m)
+                                        }
+                                    }
+                                    .pickerStyle(.wheel)
+                                    .frame(width: 60, height: 80)
+                                    .clipped()
+                                }
+                                .padding(.horizontal, 16)
+                            }
+                            .background(RoundedRectangle(cornerRadius: 12).fill(Color.secondary.opacity(0.06)))
+                            .padding(.horizontal, 20)
+                        }
+
+                        // 색상
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("색상")
+                                .font(.system(size: 13, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .padding(.leading, 24)
+
+                            HStack(spacing: 12) {
+                                ForEach(WeeklySchedule.colorPresets, id: \.hex) { preset in
+                                    Circle()
+                                        .fill(Color(hex: preset.hex) ?? .blue)
+                                        .frame(width: 32, height: 32)
+                                        .overlay(
+                                            Circle()
+                                                .stroke(Color.primary.opacity(0.8), lineWidth: selectedColor == preset.hex ? 2.5 : 0)
+                                                .padding(-3)
+                                        )
+                                        .onTapGesture { selectedColor = preset.hex }
+                                }
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(.horizontal, 20)
                         }
                     }
-                    .padding(.vertical, 4)
                 }
+                .padding(.top, 16)
+                .padding(.bottom, 32)
             }
             .navigationTitle(schedule == nil ? "스케줄 추가" : "스케줄 편집")
             #if os(iOS)
@@ -306,13 +432,19 @@ struct ScheduleEditSheet: View {
                         onSave(title, dayOfWeek, startHour, startMinute, endHour, endMinute, selectedColor, location, memo)
                         dismiss()
                     }
+                    .bold()
                     .disabled(title.isEmpty)
                 }
             }
         }
-        #if os(iOS)
-        .presentationDetents([.large])
-        #endif
+    }
+
+    private func fieldRow<C: View>(@ViewBuilder content: () -> C) -> some View {
+        HStack(spacing: 10) {
+            content()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 }
 
