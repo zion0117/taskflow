@@ -392,14 +392,14 @@ struct ActualBlockView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(block.title)
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(.white)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(.primary.opacity(0.7))
                 .lineLimit(1)
             let mins = block.endMinute - block.startMinute
             if mins >= 30 {
                 Text("\(mins)분")
                     .font(.system(size: 9))
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(.horizontal, 3)
@@ -407,7 +407,7 @@ struct ActualBlockView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 4)
-                .fill(bgColor.opacity(0.75))
+                .fill(bgColor.opacity(0.4))
         )
     }
 }
