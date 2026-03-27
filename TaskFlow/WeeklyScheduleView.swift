@@ -329,62 +329,10 @@ struct ScheduleEditSheet: View {
 
                             VStack(spacing: 0) {
                                 // 시작
-                                HStack {
-                                    Text("시작")
-                                        .font(.system(size: 14))
-                                        .foregroundStyle(.secondary)
-                                        .frame(width: 40, alignment: .leading)
-                                    Spacer()
-                                    Picker("", selection: $startHour) {
-                                        ForEach(6..<24, id: \.self) { h in
-                                            Text(String(format: "%02d", h)).tag(h)
-                                        }
-                                    }
-                                    .pickerStyle(.wheel)
-                                    .frame(width: 60, height: 80)
-                                    .clipped()
-                                    Text(":")
-                                        .font(.system(size: 18, weight: .medium))
-                                    Picker("", selection: $startMinute) {
-                                        ForEach([0, 10, 15, 20, 30, 40, 45, 50], id: \.self) { m in
-                                            Text(String(format: "%02d", m)).tag(m)
-                                        }
-                                    }
-                                    .pickerStyle(.wheel)
-                                    .frame(width: 60, height: 80)
-                                    .clipped()
-                                }
-                                .padding(.horizontal, 16)
-
+                                timeRow(label: "시작", hour: $startHour, minute: $startMinute)
                                 Divider().padding(.horizontal, 16)
-
                                 // 종료
-                                HStack {
-                                    Text("종료")
-                                        .font(.system(size: 14))
-                                        .foregroundStyle(.secondary)
-                                        .frame(width: 40, alignment: .leading)
-                                    Spacer()
-                                    Picker("", selection: $endHour) {
-                                        ForEach(6..<24, id: \.self) { h in
-                                            Text(String(format: "%02d", h)).tag(h)
-                                        }
-                                    }
-                                    .pickerStyle(.wheel)
-                                    .frame(width: 60, height: 80)
-                                    .clipped()
-                                    Text(":")
-                                        .font(.system(size: 18, weight: .medium))
-                                    Picker("", selection: $endMinute) {
-                                        ForEach([0, 10, 15, 20, 30, 40, 45, 50], id: \.self) { m in
-                                            Text(String(format: "%02d", m)).tag(m)
-                                        }
-                                    }
-                                    .pickerStyle(.wheel)
-                                    .frame(width: 60, height: 80)
-                                    .clipped()
-                                }
-                                .padding(.horizontal, 16)
+                                timeRow(label: "종료", hour: $endHour, minute: $endMinute)
                             }
                             .background(RoundedRectangle(cornerRadius: 12).fill(Color.secondary.opacity(0.06)))
                             .padding(.horizontal, 20)
