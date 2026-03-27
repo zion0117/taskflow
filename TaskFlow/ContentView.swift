@@ -143,7 +143,7 @@ enum SidebarItem: Hashable {
     case today, upcoming, stats, calendar, studyPlan, spending, wishlist, weeklySchedule
     case area(UUID)
     case project(UUID)
-    case noteDocument(UUID)
+    // noteDocument case removed
 }
 
 // MARK: - Sidebar
