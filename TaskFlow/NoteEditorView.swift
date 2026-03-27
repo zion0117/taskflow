@@ -348,64 +348,90 @@ struct NoteBlockRow: View {
     }
 }
 
-// MARK: - Resizable Image Block (사이즈 조정 가능)
+// MARK: - Resizable Image Block (사이즈 조정 + 자유 이동)
 
 struct ResizableImageBlock: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var block: NoteBlock
     var onDelete: () -> Void
 
+    // 리사이즈
     @State private var currentWidth: CGFloat = 0
-    @State private var isDragging = false
+    @State private var isResizing = false
+
+    // 이동
+    @State private var dragOffset: CGSize = .zero
+    @State private var isMoving = false
 
     private let minWidth: CGFloat = 80
     private let maxWidth: CGFloat = 600
 
     var body: some View {
         GeometryReader { geo in
-            let containerWidth = geo.size.width - 80 // 양쪽 패딩 40씩
+            let containerWidth = geo.size.width - 80
             let displayWidth = block.imageWidth > 0
                 ? min(CGFloat(block.imageWidth), containerWidth)
                 : min(containerWidth, 400)
+            let savedOffsetX = CGFloat(block.imageOffsetX)
+            let savedOffsetY = CGFloat(block.imageOffsetY)
+            let totalOffsetX = savedOffsetX + (isMoving ? dragOffset.width : 0)
+            let totalOffsetY = savedOffsetY + (isMoving ? dragOffset.height : 0)
 
-            HStack(spacing: 0) {
-                Spacer(minLength: 0)
-                ZStack(alignment: .bottomTrailing) {
-                    imageContent(width: isDragging ? currentWidth : displayWidth)
+            ZStack(alignment: .bottomTrailing) {
+                imageContent(width: isResizing ? currentWidth : displayWidth)
 
-                    // 리사이즈 핸들
-                    Image(systemName: "arrow.up.left.and.arrow.down.right")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 24, height: 24)
-                        .background(Circle().fill(Color.blue.opacity(0.8)))
-                        .offset(x: -6, y: -6)
-                        .gesture(
-                            DragGesture(minimumDistance: 2)
-                                .onChanged { val in
-                                    if !isDragging {
-                                        isDragging = true
-                                        currentWidth = displayWidth
-                                    }
-                                    let newW = currentWidth + val.translation.width
-                                    currentWidth = min(max(newW, minWidth), min(maxWidth, containerWidth))
+                // 우하단: 리사이즈 핸들
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 24, height: 24)
+                    .background(Circle().fill(Color.blue.opacity(0.8)))
+                    .offset(x: -6, y: -6)
+                    .gesture(
+                        DragGesture(minimumDistance: 2)
+                            .onChanged { val in
+                                if !isResizing {
+                                    isResizing = true
+                                    currentWidth = displayWidth
                                 }
-                                .onEnded { _ in
-                                    block.imageWidth = Double(currentWidth)
-                                    isDragging = false
-                                    try? modelContext.save()
-                                }
-                        )
-                }
-                Spacer(minLength: 0)
+                                let newW = currentWidth + val.translation.width
+                                currentWidth = min(max(newW, minWidth), min(maxWidth, containerWidth))
+                            }
+                            .onEnded { _ in
+                                block.imageWidth = Double(currentWidth)
+                                isResizing = false
+                                try? modelContext.save()
+                            }
+                    )
             }
-            .frame(width: geo.size.width)
+            .offset(x: totalOffsetX, y: totalOffsetY)
+            .gesture(
+                DragGesture(minimumDistance: 5)
+                    .onChanged { val in
+                        isMoving = true
+                        dragOffset = val.translation
+                    }
+                    .onEnded { val in
+                        block.imageOffsetX = Double(savedOffsetX + val.translation.width)
+                        block.imageOffsetY = Double(savedOffsetY + val.translation.height)
+                        dragOffset = .zero
+                        isMoving = false
+                        try? modelContext.save()
+                    }
+            )
+            .frame(width: geo.size.width, height: calculatedHeight, alignment: .center)
         }
-        .frame(height: calculatedHeight)
+        .frame(height: calculatedHeight + abs(CGFloat(block.imageOffsetY)) + 10)
         .padding(.vertical, 6)
         .contextMenu {
             Button { block.imageWidth = 0; try? modelContext.save() } label: {
                 Label("원래 크기로", systemImage: "arrow.uturn.backward")
+            }
+            Button {
+                block.imageOffsetX = 0; block.imageOffsetY = 0
+                try? modelContext.save()
+            } label: {
+                Label("원래 위치로", systemImage: "arrow.uturn.backward.circle")
             }
             Button(role: .destructive) { onDelete() } label: {
                 Label("이미지 삭제", systemImage: "trash")
@@ -422,6 +448,7 @@ struct ResizableImageBlock: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: width)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
+                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
         }
         #else
         if let data = block.imageData, let uiImg = UIImage(data: data) {
@@ -430,6 +457,7 @@ struct ResizableImageBlock: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: width)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
+                .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
         }
         #endif
     }
@@ -439,12 +467,12 @@ struct ResizableImageBlock: View {
         #if os(macOS)
         if let data = block.imageData, let nsImg = NSImage(data: data) {
             let aspect = nsImg.size.height / max(nsImg.size.width, 1)
-            return (isDragging ? currentWidth : baseWidth) * aspect
+            return (isResizing ? currentWidth : baseWidth) * aspect
         }
         #else
         if let data = block.imageData, let uiImg = UIImage(data: data) {
             let aspect = uiImg.size.height / max(uiImg.size.width, 1)
-            return (isDragging ? currentWidth : baseWidth) * aspect
+            return (isResizing ? currentWidth : baseWidth) * aspect
         }
         #endif
         return 200
