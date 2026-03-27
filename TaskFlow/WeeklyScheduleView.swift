@@ -424,20 +424,20 @@ struct ScheduleBlockView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(schedule.title)
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.white)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundStyle(.primary.opacity(0.75))
                 .lineLimit(2)
 
             if schedule.durationMinutes >= 60 {
                 if !schedule.location.isEmpty {
                     Text(schedule.location)
                         .font(.system(size: 9))
-                        .foregroundStyle(.white.opacity(0.8))
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
                 Text(schedule.startTimeString)
                     .font(.system(size: 9))
-                    .foregroundStyle(.white.opacity(0.7))
+                    .foregroundStyle(.secondary.opacity(0.7))
             }
         }
         .padding(.horizontal, 4)
@@ -445,7 +445,7 @@ struct ScheduleBlockView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(bgColor.opacity(0.85))
+                .fill(bgColor.opacity(0.35))
         )
     }
 }
