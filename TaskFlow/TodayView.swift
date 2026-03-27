@@ -43,6 +43,12 @@ struct TodayView: View {
             .sorted { $0.startedAt > $1.startedAt }
     }
 
+    var committedEntriesToday: [TimeEntry] {
+        allTasks.flatMap { $0.timeEntries }
+            .filter { $0.isCommitted && Calendar.current.isDateInToday($0.startedAt) }
+            .sorted { $0.startedAt > $1.startedAt }
+    }
+
     var completedCount: Int { allTasks.filter { $0.isCompleted }.count }
     var totalCount: Int { allTasks.count }
     var pendingCount: Int {
