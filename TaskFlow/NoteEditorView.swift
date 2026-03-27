@@ -382,35 +382,18 @@ struct NoteBlockRow: View {
         .padding(.vertical, 3)
     }
 
-    // MARK: 텍스트박스
-    var textBoxView: some View {
-        #if os(macOS)
+    // MARK: 텍스트박스 (래퍼 안에서 사용)
+    var textBoxContent: some View {
         TextEditor(text: Binding(
             get: { block.content },
             set: { block.content = $0; try? modelContext.save() }
         ))
         .font(.system(size: 14))
         .scrollDisabled(true)
-        .frame(minHeight: 56)
         .padding(10)
         .background(Color.secondary.opacity(0.06))
         .overlay(RoundedRectangle(cornerRadius: 7).stroke(Color.secondary.opacity(0.18), lineWidth: 1))
         .clipShape(RoundedRectangle(cornerRadius: 7))
-        .padding(.horizontal, 40)
-        .padding(.vertical, 5)
-        #else
-        TextEditor(text: Binding(
-            get: { block.content },
-            set: { block.content = $0; try? modelContext.save() }
-        ))
-        .font(.system(size: 14))
-        .frame(minHeight: 56)
-        .padding(10)
-        .background(Color.secondary.opacity(0.06))
-        .clipShape(RoundedRectangle(cornerRadius: 7))
-        .padding(.horizontal, 40)
-        .padding(.vertical, 5)
-        #endif
     }
 
     // MARK: 개요 번호
