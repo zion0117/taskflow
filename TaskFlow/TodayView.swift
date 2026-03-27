@@ -633,6 +633,15 @@ struct TaskRow: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
+                    if !task.recurrence.isEmpty {
+                        HStack(spacing: 2) {
+                            Image(systemName: "repeat")
+                                .font(.system(size: 9))
+                            Text(task.recurrence == "daily" ? "매일" : "매주")
+                                .font(.system(size: 10))
+                        }
+                        .foregroundStyle(.blue.opacity(0.7))
+                    }
                     if let due = task.dueDate {
                         Text(formatDate(due))
                             .font(.system(size: 11))
