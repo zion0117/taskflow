@@ -268,7 +268,11 @@ struct WeeklyScheduleView: View {
                         x: 44 + CGFloat(sched.dayOfWeek) * dayWidth + 2,
                         y: startOffset
                     )
-                    .onTapGesture { editingSchedule = sched }
+                    .onTapGesture {
+                        // 이번 주 해당 요일의 날짜 계산
+                        let date = Calendar.current.date(byAdding: .day, value: sched.dayOfWeek, to: weekMonday)!
+                        selectedBlockInfo = ScheduleBlockInfo(schedule: sched, date: date)
+                    }
                     .contextMenu {
                         Button { editingSchedule = sched } label: {
                             Label("편집", systemImage: "pencil")
