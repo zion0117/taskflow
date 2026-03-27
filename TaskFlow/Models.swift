@@ -623,3 +623,50 @@ class MindMapNode {
         self.parentNodeId = parentNodeId
     }
 }
+
+// MARK: - WeeklySchedule (주간 고정 스케줄)
+@Model
+class WeeklySchedule {
+    var id: UUID
+    var title: String              // "데이터구조", "알바" 등
+    var dayOfWeek: Int             // 0=월, 1=화, 2=수, 3=목, 4=금, 5=토, 6=일
+    var startHour: Int             // 시작 시 (0~23)
+    var startMinute: Int           // 시작 분 (0~59)
+    var endHour: Int               // 종료 시
+    var endMinute: Int             // 종료 분
+    var colorHex: String           // 블록 색상
+    var location: String           // 장소 (선택)
+    var memo: String               // 메모 (선택)
+
+    init(title: String, dayOfWeek: Int, startHour: Int, startMinute: Int = 0,
+         endHour: Int, endMinute: Int = 0, colorHex: String = "3B82F6",
+         location: String = "", memo: String = "") {
+        self.id = UUID()
+        self.title = title
+        self.dayOfWeek = dayOfWeek
+        self.startHour = startHour
+        self.startMinute = startMinute
+        self.endHour = endHour
+        self.endMinute = endMinute
+        self.colorHex = colorHex
+        self.location = location
+        self.memo = memo
+    }
+
+    var startTimeString: String {
+        String(format: "%d:%02d", startHour, startMinute)
+    }
+    var endTimeString: String {
+        String(format: "%d:%02d", endHour, endMinute)
+    }
+    var durationMinutes: Int {
+        (endHour * 60 + endMinute) - (startHour * 60 + startMinute)
+    }
+
+    static let dayNames = ["월", "화", "수", "목", "금", "토", "일"]
+    static let colorPresets: [(name: String, hex: String)] = [
+        ("파랑", "3B82F6"), ("빨강", "EF4444"), ("초록", "22C55E"),
+        ("보라", "8B5CF6"), ("주황", "F97316"), ("분홍", "EC4899"),
+        ("하늘", "06B6D4"), ("노랑", "EAB308"), ("회색", "6B7280")
+    ]
+}
