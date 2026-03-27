@@ -333,6 +333,23 @@ struct ThingsSidebar: View {
                         .listRowInsets(EdgeInsets(top: 2, leading: 18, bottom: 2, trailing: 6))
                         .tag(SidebarItem.project(project.id))
                         .simultaneousGesture(TapGesture().onEnded { onTap?(.project(project.id)) })
+                        .contextMenu {
+                            Button {
+                                editName = project.name
+                                editColorHex = project.colorHex
+                                editingProject = project
+                            } label: {
+                                Label("편집", systemImage: "pencil")
+                            }
+                            Divider()
+                            Button(role: .destructive) {
+                                modelContext.delete(project)
+                                try? modelContext.save()
+                                if selection == .project(project.id) { selection = .today }
+                            } label: {
+                                Label("삭제", systemImage: "trash")
+                            }
+                        }
                     }
                 }, header: {
                     Text("프로젝트").font(.system(size: 10, weight: .semibold)).padding(.leading, 10)
@@ -341,6 +358,58 @@ struct ThingsSidebar: View {
         }
         .listStyle(.sidebar)
         .frame(minWidth: 220)
+        // Area 이름 편집 sheet
+        .sheet(item: $editingArea) { area in
+            NavigationStack {
+                Form {
+                    TextField("Area 이름", text: $editName)
+                }
+                .navigationTitle("Area 편집")
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) { Button("취소") { editingArea = nil } }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("저장") {
+                            area.name = editName
+                            try? modelContext.save()
+                            editingArea = nil
+                        }
+                    }
+                }
+            }
+            .frame(minWidth: 300, minHeight: 150)
+        }
+        // 프로젝트 편집 sheet
+        .sheet(item: $editingProject) { project in
+            NavigationStack {
+                Form {
+                    TextField("프로젝트 이름", text: $editName)
+                    Section("색상") {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 8), spacing: 8) {
+                            ForEach(["007AFF","EF4444","F97316","EAB308","22C55E","06B6D4","8B5CF6","EC4899"], id: \.self) { hex in
+                                Circle()
+                                    .fill(Color(hex: hex) ?? .blue)
+                                    .frame(width: 24, height: 24)
+                                    .overlay(Circle().stroke(Color.primary, lineWidth: editColorHex == hex ? 2 : 0))
+                                    .onTapGesture { editColorHex = hex }
+                            }
+                        }
+                    }
+                }
+                .navigationTitle("프로젝트 편집")
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) { Button("취소") { editingProject = nil } }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("저장") {
+                            project.name = editName
+                            project.colorHex = editColorHex
+                            try? modelContext.save()
+                            editingProject = nil
+                        }
+                    }
+                }
+            }
+            .frame(minWidth: 320, minHeight: 220)
+        }
         .safeAreaInset(edge: .bottom) {
             HStack {
                 Button {
