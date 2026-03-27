@@ -1000,6 +1000,7 @@ struct TaskEditSheet: View {
         .onAppear {
             title = task.title
             notes = task.notes
+            recurrence = task.recurrence
             if let d = task.dueDate {
                 hasDueDate = true
                 dueDate = d
