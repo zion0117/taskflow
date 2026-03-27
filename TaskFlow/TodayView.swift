@@ -978,6 +978,7 @@ struct TaskEditSheet: View {
                     task.title = trimmed
                     task.notes = notes
                     task.dueDate = hasDueDate ? dueDate : nil
+                    task.recurrence = recurrence
                     try? modelContext.save()
                     dismiss()
                 } label: {
