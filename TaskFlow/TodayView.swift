@@ -860,6 +860,7 @@ struct TaskEditSheet: View {
     @State private var notes: String = ""
     @State private var dueDate: Date = Date()
     @State private var hasDueDate: Bool = false
+    @State private var recurrence: String = ""
     @FocusState private var titleFocused: Bool
 
     var body: some View {
