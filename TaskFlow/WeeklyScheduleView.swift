@@ -148,6 +148,9 @@ struct WeeklyScheduleView: View {
                 try? modelContext.save()
             }
         }
+        .sheet(item: $selectedBlockInfo) { info in
+            ScheduleTaskSheet(schedule: info.schedule, date: info.date)
+        }
     }
 
     // MARK: - 주 이동 네비게이터
