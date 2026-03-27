@@ -611,6 +611,7 @@ class MindMapNode {
     var x: Double
     var y: Double
     var parentNodeId: UUID?
+    var colorHex: String = ""    // 노드 배경색 (빈 = 기본)
     var document: NoteDocument?
     var noteBlock: NoteBlock?    // 인라인 마인드맵 블록에 연결
 
