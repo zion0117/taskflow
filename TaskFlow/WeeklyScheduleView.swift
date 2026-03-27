@@ -408,33 +408,50 @@ struct ActualBlockView: View {
 
 struct ScheduleBlockView: View {
     let schedule: WeeklySchedule
+    var date: Date = Date()  // 해당 날짜 (태스크 수 표시용)
 
     private var bgColor: Color {
         Color(hex: schedule.colorHex) ?? .blue
     }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(schedule.title)
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(.primary.opacity(0.75))
-                .lineLimit(2)
+    private var pendingCount: Int {
+        schedule.tasks(for: date).filter { !$0.isCompleted }.count
+    }
 
-            if schedule.durationMinutes >= 60 {
-                if !schedule.location.isEmpty {
-                    Text(schedule.location)
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(schedule.title)
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.primary.opacity(0.75))
+                    .lineLimit(2)
+
+                if schedule.durationMinutes >= 60 {
+                    if !schedule.location.isEmpty {
+                        Text(schedule.location)
+                            .font(.system(size: 9))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    Text(schedule.startTimeString)
                         .font(.system(size: 9))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                        .foregroundStyle(.secondary.opacity(0.7))
                 }
-                Text(schedule.startTimeString)
-                    .font(.system(size: 9))
-                    .foregroundStyle(.secondary.opacity(0.7))
+            }
+            .padding(.horizontal, 4)
+            .padding(.vertical, 3)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+
+            // 미완료 태스크 뱃지
+            if pendingCount > 0 {
+                Text("\(pendingCount)")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 14, height: 14)
+                    .background(Circle().fill(Color.red.opacity(0.7)))
+                    .padding(3)
             }
         }
-        .padding(.horizontal, 4)
-        .padding(.vertical, 3)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 6)
                 .fill(bgColor.opacity(0.35))
