@@ -255,6 +255,49 @@ struct NoteEditorView: View {
         try? modelContext.save()
     }
 
+    func insertPDFPages(from url: URL) {
+        guard let pdfDoc = PDFDocument(url: url) else { return }
+        let pageCount = pdfDoc.pageCount
+        var lastBlock = anchorBlock
+
+        for i in 0..<pageCount {
+            guard let page = pdfDoc.page(at: i) else { continue }
+            let bounds = page.bounds(for: .mediaBox)
+            let scale: CGFloat = 2.0 // 레티나 품질
+            let size = CGSize(width: bounds.width * scale, height: bounds.height * scale)
+
+            #if os(macOS)
+            let image = NSImage(size: size)
+            image.lockFocus()
+            if let ctx = NSGraphicsContext.current?.cgContext {
+                ctx.setFillColor(NSColor.white.cgColor)
+                ctx.fill(CGRect(origin: .zero, size: size))
+                ctx.scaleBy(x: scale, y: scale)
+                page.draw(with: .mediaBox, to: ctx)
+            }
+            image.unlockFocus()
+            guard let tiff = image.tiffRepresentation,
+                  let rep = NSBitmapImageRep(data: tiff),
+                  let data = rep.representation(using: .jpeg, properties: [.compressionFactor: 0.85])
+            else { continue }
+            #else
+            let renderer = UIGraphicsImageRenderer(size: size)
+            let uiImage = renderer.image { ctx in
+                UIColor.white.setFill()
+                ctx.fill(CGRect(origin: .zero, size: size))
+                ctx.cgContext.scaleBy(x: scale, y: scale)
+                page.draw(with: .mediaBox, to: ctx.cgContext)
+            }
+            guard let data = uiImage.jpegData(compressionQuality: 0.85) else { continue }
+            #endif
+
+            let b = insertBlock(after: lastBlock, type: "image", inheritIndent: false)
+            b.imageData = data
+            lastBlock = b
+        }
+        try? modelContext.save()
+    }
+
     func indentBlock(_ block: NoteBlock) {
         block.indentLevel = min(block.indentLevel + 1, 11)
         document.updatedAt = Date()
