@@ -124,10 +124,6 @@ struct MacContentView: View {
                     if let area = areas.first(where: { $0.id == id }) {
                         AreaDetailView(area: area, timerManager: timerManager)
                     }
-                case .noteDocument(let id):
-                    if let doc = noteDocuments.first(where: { $0.id == id }) {
-                        NoteEditorView(document: doc)
-                    }
                 case .none:
                     TodayView(timerManager: timerManager, showAddTask: .constant(nil))
                 }
