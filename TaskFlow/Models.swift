@@ -569,6 +569,7 @@ class NoteBlock {
     var content: String
     var indentLevel: Int    // 0~3 사이클 (1. → 1) → (1) → ①)
     var imageData: Data?
+    var imageWidth: Double = 0   // 0 = 기본(자동), 그 외 = 사용자 지정 너비
     var document: NoteDocument?
     @Relationship(deleteRule: .cascade, inverse: \MindMapNode.noteBlock) var mindMapNodes: [MindMapNode] = []
 
