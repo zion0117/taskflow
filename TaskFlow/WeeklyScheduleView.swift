@@ -156,62 +156,50 @@ struct WeeklyScheduleView: View {
         }
     }
 
-    // MARK: - 주 이동 네비게이터
+    // MARK: - 주 이동 (컴팩트)
 
-    private var weekNavigator: some View {
-        HStack {
+    private var weekNavigatorCompact: some View {
+        HStack(spacing: 8) {
             Button { weekOffset -= 1; hiddenScheduleIds.removeAll() } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
             }
             .buttonStyle(.plain)
 
-            Spacer()
-
-            VStack(spacing: 2) {
-                let df = DateFormatter()
-                Text({
-                    df.locale = Locale(identifier: "ko_KR")
-                    df.dateFormat = "M/d"
-                    let mon = df.string(from: weekDates.first ?? Date())
-                    let sun = df.string(from: weekDates.last ?? Date())
-                    return "\(mon) ~ \(sun)"
-                }())
-                .font(.system(size: 14, weight: .semibold))
-
-                if weekTotalSeconds > 0 {
-                    let h = weekTotalSeconds / 3600
-                    let m = (weekTotalSeconds % 3600) / 60
-                    Text("총 \(h)시간 \(m)분")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
-                }
-            }
-
-            Spacer()
+            let df: DateFormatter = {
+                let f = DateFormatter(); f.locale = Locale(identifier: "ko_KR"); f.dateFormat = "M/d"; return f
+            }()
+            Text("\(df.string(from: weekDates.first ?? Date())) ~ \(df.string(from: weekDates.last ?? Date()))")
+                .font(.system(size: 12, weight: .medium))
 
             Button { weekOffset += 1; hiddenScheduleIds.removeAll() } label: {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(weekOffset >= 0 ? .quaternary : .secondary)
             }
             .buttonStyle(.plain)
             .disabled(weekOffset >= 0)
 
             if weekOffset != 0 {
-                Button {
-                    weekOffset = 0
-                } label: {
-                    Text("이번 주")
-                        .font(.system(size: 12))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
+                Button { weekOffset = 0; hiddenScheduleIds.removeAll() } label: {
+                    Text("오늘")
+                        .font(.system(size: 11))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
                         .background(Capsule().fill(Color.blue.opacity(0.1)))
                 }
                 .buttonStyle(.plain)
             }
+
+            if weekTotalSeconds > 0 {
+                let h = weekTotalSeconds / 3600
+                let m = (weekTotalSeconds % 3600) / 60
+                Text("\(h)h \(m)m")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(.secondary)
+            }
         }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 6)
     }
 
     // MARK: - 요일 헤더
