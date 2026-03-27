@@ -502,7 +502,7 @@ struct InlineMindMapBlock: View {
         VStack(spacing: 0) {
             // 마인드맵 캔버스
             ZStack {
-                Color(.systemBackground)
+                Color(NoteEditorColors.background)
                     .onTapGesture { selectedId = nil }
 
                 // 연결선 (node 타입만)
@@ -792,7 +792,7 @@ struct InlineMindMapNodeView: View {
             .padding(.vertical, 7)
             .background(
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(isRoot ? Color.blue : Color(.systemBackground))
+                    .fill(isRoot ? Color.blue : Color(NoteEditorColors.background))
                     .shadow(color: isSelected ? .blue.opacity(0.4) : .black.opacity(0.1),
                             radius: isSelected ? 6 : 3, x: 0, y: 1)
             )
