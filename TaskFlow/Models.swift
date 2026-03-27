@@ -679,3 +679,22 @@ class WeeklySchedule {
         ("하늘", "67E8F9"), ("노랑", "FDE047"), ("회색", "CBD5E1")
     ]
 }
+
+// MARK: - ScheduleTask (시간표 날짜별 할 일)
+@Model
+class ScheduleTask {
+    var id: UUID
+    var title: String
+    var isCompleted: Bool
+    var date: Date             // 특정 날짜 (예: 2026-03-30)
+    var createdAt: Date
+    var schedule: WeeklySchedule?
+
+    init(title: String, date: Date) {
+        self.id = UUID()
+        self.title = title
+        self.isCompleted = false
+        self.date = date
+        self.createdAt = Date()
+    }
+}
