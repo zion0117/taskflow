@@ -296,6 +296,69 @@ struct WeeklyScheduleView: View {
             }
         }
     }
+
+    // MARK: - 실제 시간 블록들
+
+    private var actualBlocks: some View {
+        GeometryReader { geo in
+            let dayWidth = (geo.size.width - 44) / 7
+
+            ForEach(weekTimeBlocks) { block in
+                let startOffset = CGFloat(block.startMinute - minHour * 60) / 60.0 * hourHeight
+                let duration = CGFloat(block.endMinute - block.startMinute) / 60.0 * hourHeight
+
+                ActualBlockView(block: block)
+                    .frame(width: dayWidth - 4, height: max(duration, 16))
+                    .offset(
+                        x: 44 + CGFloat(block.dayIndex) * dayWidth + 2,
+                        y: startOffset
+                    )
+            }
+        }
+    }
+}
+
+// MARK: - Actual Time Block Model
+
+struct ActualTimeBlock: Identifiable {
+    let id: UUID
+    let dayIndex: Int       // 0=월 ~ 6=일
+    let startMinute: Int    // 하루 시작부터 분
+    let endMinute: Int
+    let title: String       // 프로젝트명
+    let colorHex: String
+}
+
+// MARK: - Actual Block View
+
+struct ActualBlockView: View {
+    let block: ActualTimeBlock
+
+    private var bgColor: Color {
+        Color(hex: block.colorHex) ?? .gray
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text(block.title)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+            let mins = block.endMinute - block.startMinute
+            if mins >= 30 {
+                Text("\(mins)분")
+                    .font(.system(size: 9))
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+        }
+        .padding(.horizontal, 3)
+        .padding(.vertical, 2)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: 4)
+                .fill(bgColor.opacity(0.75))
+        )
+    }
 }
 
 // MARK: - Schedule Block View
