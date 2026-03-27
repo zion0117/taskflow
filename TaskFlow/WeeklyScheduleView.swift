@@ -217,14 +217,9 @@ struct WeeklyScheduleView: View {
                     .font(.system(size: 13, weight: isToday ? .bold : .medium))
                     .foregroundStyle(day >= 5 ? .red.opacity(0.7) : (isToday ? .blue : .primary))
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 4)
+                    .padding(.vertical, 2)
             }
         }
-        #if os(iOS)
-        .background(Color(.systemBackground))
-        #else
-        .background(Color(NSColor.windowBackgroundColor))
-        #endif
     }
 
     // MARK: - 시간 그리드
