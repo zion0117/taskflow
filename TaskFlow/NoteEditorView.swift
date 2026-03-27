@@ -417,7 +417,6 @@ struct ResizableImageBlock: View {
     func imageContent(width: CGFloat) -> some View {
         #if os(macOS)
         if let data = block.imageData, let nsImg = NSImage(data: data) {
-            let aspect = nsImg.size.height / max(nsImg.size.width, 1)
             Image(nsImage: nsImg)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
