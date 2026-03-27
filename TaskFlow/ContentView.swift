@@ -61,8 +61,6 @@ struct iOSContentView: View {
 
             NavigationStack {
                 NotesView()
-                    .navigationTitle("노트")
-                    .navigationBarTitleDisplayMode(.large)
             }
             .tabItem { Label("노트", systemImage: "note.text") }.tag(6)
 
