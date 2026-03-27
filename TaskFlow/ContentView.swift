@@ -76,7 +76,7 @@ struct MacContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var areas: [Area]
     @Query private var projects: [Project]
-    @Query private var noteDocuments: [NoteDocument]
+    // noteDocuments query removed
     var timerManager: TimerManager
 
     @State private var selection: SidebarItem? = .today
