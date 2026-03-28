@@ -215,7 +215,7 @@ struct ContributionHeatmapView: View {
                                                 .fill(heatColor(date))
                                                 .overlay(
                                                     RoundedRectangle(cornerRadius: 2)
-                                                        .strokeBorder(isSelected ? Color.blue : Color.clear, lineWidth: 1.5)
+                                                        .strokeBorder(isSelected ? Color.ghGreen : Color.clear, lineWidth: 1.5)
                                                 )
                                                 .frame(width: cellSize, height: cellSize)
                                                 .onTapGesture { selectedDate = date }
@@ -317,12 +317,12 @@ struct MonthCalendarView: View {
                                     RoundedRectangle(cornerRadius: 6)
                                         .fill(s > 0 ? heatColor(date) : Color.secondary.opacity(0.06))
                                     RoundedRectangle(cornerRadius: 6)
-                                        .strokeBorder(isSelected ? Color.blue : Color.clear, lineWidth: 2)
+                                        .strokeBorder(isSelected ? Color.ghGreen : Color.clear, lineWidth: 2)
 
                                     VStack(spacing: 2) {
                                         Text("\(cal.component(.day, from: date))")
                                             .font(.system(size: 12, weight: isToday ? .bold : .regular))
-                                            .foregroundStyle(isToday ? Color.blue : Color.primary)
+                                            .foregroundStyle(isToday ? Color.ghGreen : Color.primary)
                                         if s > 0 {
                                             Text(shortTime(s))
                                                 .font(.system(size: 10, weight: .semibold))
@@ -395,7 +395,7 @@ struct DailyStatsView: View {
                             innerRadius: .ratio(0.58),
                             angularInset: 1.5
                         )
-                        .foregroundStyle(Color(hex: proj.colorHex) ?? .blue)
+                        .foregroundStyle(Color(hex: proj.colorHex) ?? .ghGreen)
                         .cornerRadius(3)
                     }
                     .frame(width: 110, height: 110)
@@ -404,7 +404,7 @@ struct DailyStatsView: View {
                         ForEach(breakdown, id: \.0.id) { proj, secs in
                             HStack(spacing: 8) {
                                 RoundedRectangle(cornerRadius: 2)
-                                    .fill(Color(hex: proj.colorHex) ?? .blue)
+                                    .fill(Color(hex: proj.colorHex) ?? .ghGreen)
                                     .frame(width: 4, height: 18)
                                 Text(proj.name).font(.system(size: 13)).lineLimit(1)
                                 Spacer()
@@ -464,7 +464,7 @@ struct TimeBlockChart: View {
         allEntries.compactMap { entry in
             guard cal.isDate(entry.startedAt, inSameDayAs: date) else { return nil }
             let hex = entry.task?.project?.colorHex ?? "8E8E93"
-            return (entry, Color(hex: hex) ?? .blue)
+            return (entry, Color(hex: hex) ?? .ghGreen)
         }
     }
 
@@ -622,14 +622,14 @@ struct WeeklyStatsView: View {
                     Text("과목별").font(.system(size: 15, weight: .semibold))
                     ForEach(breakdown, id: \.0.id) { proj, secs in
                         HStack(spacing: 10) {
-                            Circle().fill(Color(hex: proj.colorHex) ?? .blue).frame(width: 10, height: 10)
+                            Circle().fill(Color(hex: proj.colorHex) ?? .ghGreen).frame(width: 10, height: 10)
                             Text(proj.name).font(.system(size: 14))
                             Spacer()
                             GeometryReader { geo in
                                 ZStack(alignment: .leading) {
                                     RoundedRectangle(cornerRadius: 3).fill(Color.secondary.opacity(0.12)).frame(height: 5)
                                     RoundedRectangle(cornerRadius: 3)
-                                        .fill(Color(hex: proj.colorHex) ?? .blue)
+                                        .fill(Color(hex: proj.colorHex) ?? .ghGreen)
                                         .frame(width: geo.size.width * (totalWeek > 0 ? Double(secs)/Double(totalWeek) : 0), height: 5)
                                 }
                                 .frame(maxHeight: .infinity)
@@ -707,7 +707,7 @@ struct MonthlyStatsView: View {
                             innerRadius: .ratio(0.58),
                             angularInset: 1.5
                         )
-                        .foregroundStyle(Color(hex: proj.colorHex) ?? .blue)
+                        .foregroundStyle(Color(hex: proj.colorHex) ?? .ghGreen)
                         .cornerRadius(3)
                     }
                     .frame(width: 110, height: 110)
@@ -716,7 +716,7 @@ struct MonthlyStatsView: View {
                         ForEach(breakdown, id: \.0.id) { proj, secs in
                             HStack(spacing: 8) {
                                 RoundedRectangle(cornerRadius: 2)
-                                    .fill(Color(hex: proj.colorHex) ?? .blue)
+                                    .fill(Color(hex: proj.colorHex) ?? .ghGreen)
                                     .frame(width: 4, height: 18)
                                 Text(proj.name).font(.system(size: 13)).lineLimit(1)
                                 Spacer()

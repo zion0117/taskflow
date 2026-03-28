@@ -7,28 +7,27 @@ struct TagChip: View {
     var isRemovable: Bool = false
     var onRemove: (() -> Void)? = nil
 
-    var chipColor: Color { Color(hex: tag.colorHex) ?? .blue }
+    var chipColor: Color { Color(hex: tag.colorHex) ?? .ghGreen }
 
     var body: some View {
         HStack(spacing: 3) {
             Circle()
                 .fill(chipColor)
-                .frame(width: 5, height: 5)
+                .frame(width: 6, height: 6)
             Text(tag.name)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(.primary)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(chipColor)
             if isRemovable {
                 Image(systemName: "xmark")
-                    .font(.system(size: 8, weight: .bold))
-                    .foregroundStyle(.secondary)
+                    .font(.system(size: 7, weight: .bold))
+                    .foregroundStyle(chipColor.opacity(0.6))
                     .onTapGesture { onRemove?() }
             }
         }
-        .padding(.horizontal, 7)
-        .padding(.vertical, 3)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
         .background(chipColor.opacity(0.12))
-        .clipShape(Capsule())
-        .overlay(Capsule().stroke(chipColor.opacity(0.3), lineWidth: 0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 }
 
@@ -160,7 +159,7 @@ struct CreateTagSheet: View {
                     ForEach(presetColors, id: \.self) { hex in
                         ZStack {
                             Circle()
-                                .fill(Color(hex: hex) ?? .blue)
+                                .fill(Color(hex: hex) ?? .ghGreen)
                                 .frame(width: 28, height: 28)
                             if selectedColor == hex {
                                 Circle()
@@ -213,7 +212,7 @@ struct CreateTagSheet: View {
                         .foregroundStyle(canCreate ? .white : .secondary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 13)
-                        .background(canCreate ? Color.blue : Color.secondary.opacity(0.12))
+                        .background(canCreate ? Color.ghGreen : Color.secondary.opacity(0.12))
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)

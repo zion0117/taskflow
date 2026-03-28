@@ -186,7 +186,7 @@ struct WeeklyScheduleView: View {
                         .font(.system(size: 11))
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Capsule().fill(Color.blue.opacity(0.1)))
+                        .background(Capsule().fill(Color.ghGreen.opacity(0.1)))
                 }
                 .buttonStyle(.plain)
             }
@@ -209,7 +209,7 @@ struct WeeklyScheduleView: View {
                 let isToday = Calendar.current.component(.weekday, from: Date()) == (day + 2) % 7 + 1
                 Text(dayNames[day])
                     .font(.system(size: 12, weight: isToday ? .bold : .medium))
-                    .foregroundStyle(day >= 5 ? .red.opacity(0.7) : (isToday ? .blue : .primary))
+                    .foregroundStyle(day >= 5 ? .red.opacity(0.7) : (isToday ? .ghGreen : .primary))
                     .frame(maxWidth: .infinity)
             }
         }
@@ -282,7 +282,7 @@ struct WeeklyScheduleView: View {
             ForEach(schedules.filter { !hiddenScheduleIds.contains($0.id) }) { sched in
                 let startOffset = CGFloat(sched.startHour * 60 + sched.startMinute - minHour * 60) / 60.0 * hourHeight
                 let duration = CGFloat(sched.durationMinutes) / 60.0 * hourHeight
-                let color = Color(hex: sched.colorHex) ?? .blue
+                let color = Color(hex: sched.colorHex) ?? .ghGreen
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(sched.title)
@@ -391,7 +391,7 @@ struct ScheduleBlockView: View {
     var date: Date = Date()  // 해당 날짜 (태스크 수 표시용)
 
     private var bgColor: Color {
-        Color(hex: schedule.colorHex) ?? .blue
+        Color(hex: schedule.colorHex) ?? .ghGreen
     }
 
     private var pendingCount: Int {
@@ -474,7 +474,7 @@ struct ScheduleEditSheet: View {
     }
 
     private var previewColor: Color {
-        Color(hex: selectedColor) ?? .blue
+        Color(hex: selectedColor) ?? .ghGreen
     }
 
     var body: some View {
@@ -595,7 +595,7 @@ struct ScheduleEditSheet: View {
                             HStack(spacing: 12) {
                                 ForEach(WeeklySchedule.colorPresets, id: \.hex) { preset in
                                     Circle()
-                                        .fill(Color(hex: preset.hex) ?? .blue)
+                                        .fill(Color(hex: preset.hex) ?? .ghGreen)
                                         .frame(width: 32, height: 32)
                                         .overlay(
                                             Circle()
@@ -722,7 +722,7 @@ struct ScheduleTaskSheet: View {
     }
 
     private var color: Color {
-        Color(hex: schedule.colorHex) ?? .blue
+        Color(hex: schedule.colorHex) ?? .ghGreen
     }
 
     var body: some View {

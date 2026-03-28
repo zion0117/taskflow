@@ -308,7 +308,7 @@ struct WishItemRow: View {
                     if item.price > 0 {
                         Text(item.formattedPrice)
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.ghGreen)
                     }
                 }
             }
@@ -467,7 +467,7 @@ struct AddWishItemSheet: View {
                         if !priceText.isEmpty, (Int(priceText.replacingOccurrences(of: ",", with: "")) ?? 0) > 0 {
                             Text(formattedPrice)
                                 .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(Color.ghGreen)
                         }
                     }
                 }
@@ -529,7 +529,7 @@ struct AddWishItemSheet: View {
                             .foregroundStyle(canSubmit ? .white : .secondary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 13)
-                            .background(canSubmit ? Color.blue : Color.secondary.opacity(0.12))
+                            .background(canSubmit ? Color.ghGreen : Color.secondary.opacity(0.12))
                             .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .buttonStyle(.plain)

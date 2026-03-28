@@ -36,9 +36,9 @@ struct UpcomingView: View {
             VStack(alignment: .leading, spacing: 0) {
                 // 헤더
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Image(systemName: "calendar.badge.clock")
+                    Image(systemName: "clock")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.ghGreen)
                     Text("Upcoming")
                         .font(.system(size: 20, weight: .bold))
                     Spacer()
@@ -49,7 +49,7 @@ struct UpcomingView: View {
 
                 if upcomingDates.isEmpty {
                     VStack(spacing: 8) {
-                        Image(systemName: "calendar")
+                        Image(systemName: "tray")
                             .font(.system(size: 32))
                             .foregroundStyle(.secondary.opacity(0.3))
                         Text("예정된 태스크 없음")
@@ -104,7 +104,7 @@ struct UpcomingDaySection: View {
             HStack(alignment: .firstTextBaseline, spacing: 5) {
                 Text(dayNumber)
                     .font(.system(size: 22, weight: .bold))
-                    .foregroundStyle(isToday ? Color.blue : Color.primary)
+                    .foregroundStyle(isToday ? Color.ghGreen : .primary)
                 Text(dayLabel)
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
@@ -144,46 +144,26 @@ struct UpcomingTaskRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 10) {
-            // 체크박스
-            ZStack {
-                Circle()
-                    .strokeBorder(projColor.opacity(0.7), lineWidth: 1.5)
-                    .frame(width: 18, height: 18)
-                if task.isCompleted {
-                    Circle().fill(projColor).frame(width: 18, height: 18)
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(.white)
+        HStack(spacing: 8) {
+            // GitHub issue icon
+            Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle.dotted")
+                .font(.system(size: 14))
+                .foregroundStyle(task.isCompleted ? Color.secondary : Color.ghGreen)
+                .frame(width: 20)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    task.isCompleted.toggle()
+                    try? modelContext.save()
                 }
-            }
-            .frame(width: 26, height: 26)
-            .contentShape(Circle())
-            .onTapGesture {
-                task.isCompleted.toggle()
-                try? modelContext.save()
-            }
 
-            // 내용
-            VStack(alignment: .leading, spacing: 2) {
-                Text(task.title)
-                    .font(.system(size: 13))
-                    .foregroundStyle(task.isCompleted ? Color.secondary : Color.primary)
-                    .strikethrough(task.isCompleted, color: Color.secondary.opacity(0.5))
+            Text(task.title)
+                .font(.system(size: 13, weight: task.isCompleted ? .regular : .medium))
+                .foregroundStyle(task.isCompleted ? Color.secondary : Color.primary)
+                .strikethrough(task.isCompleted, color: Color.secondary.opacity(0.5))
+                .lineLimit(1)
 
-                HStack(spacing: 5) {
-                    if let proj = task.project {
-                        HStack(spacing: 3) {
-                            Circle().fill(projColor).frame(width: 5, height: 5)
-                            Text(proj.name)
-                                .font(.system(size: 11))
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    ForEach(task.tags) { tag in
-                        TagChip(tag: tag)
-                    }
-                }
+            ForEach(task.tags) { tag in
+                TagChip(tag: tag)
             }
 
             Spacer()
@@ -207,7 +187,7 @@ struct UpcomingTaskRow: View {
             }
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 6)
+        .padding(.vertical, 3)
         .contextMenu {
             Button { showEdit = true } label: { Label("편집", systemImage: "pencil") }
             Button {

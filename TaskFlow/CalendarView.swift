@@ -4,9 +4,11 @@ import SwiftData
 struct CalendarView: View {
     @Query private var projects: [Project]
     @Query private var allTasks: [Task]   // 프로젝트 없는 태스크 포함
+    @Query(sort: \Tag.name) private var allTagsList: [Tag]
     @State private var selectedDate = Date()
     @State private var displayMonth = Date()
     @State private var showAddTask = false
+    @State private var selectedTagFilter: Tag? = nil
 
     var calendar: Calendar { Calendar.current }
 
@@ -19,128 +21,331 @@ struct CalendarView: View {
 
     func examsForDate(_ date: Date) -> [ExamEvent] { projects.examEvents(on: date) }
 
-    var tasksForSelected: [Task]      { tasksForDate(selectedDate) }
+    var tasksForSelectedAll: [Task]    { tasksForDate(selectedDate) }
+    var tasksForSelected: [Task] {
+        guard let tag = selectedTagFilter else { return tasksForSelectedAll }
+        return tasksForSelectedAll.filter { $0.tags.contains(where: { $0.id == tag.id }) }
+    }
     var examsForSelected: [ExamEvent] { examsForDate(selectedDate) }
+
+    // 선택 날짜에 사용된 태그들
+    var usedTagsForSelected: [Tag] {
+        var seenNames = Set<String>()
+        var result: [Tag] = []
+        for task in tasksForSelectedAll {
+            for tag in task.tags {
+                if seenNames.insert(tag.name).inserted {
+                    result.append(tag)
+                }
+            }
+        }
+        return result.sorted { $0.name < $1.name }
+    }
+
+    // 해당 월 전체 태스크 수 기준 contribution level
+    func contributionLevel(_ date: Date) -> Int {
+        let count = tasksForDate(date).count
+        if count == 0 { return 0 }
+        if count <= 1 { return 1 }
+        if count <= 3 { return 2 }
+        if count <= 5 { return 3 }
+        return 4
+    }
+
+    var openCount: Int { tasksForSelected.filter { !$0.isCompleted }.count }
+    var closedCount: Int { tasksForSelected.filter { $0.isCompleted }.count }
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 14) {
-                // 월 네비게이션
-                HStack {
-                    Button {
-                        displayMonth = calendar.date(byAdding: .month, value: -1, to: displayMonth)!
-                    } label: {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
-                    Spacer()
-                    Text(monthTitle(displayMonth))
-                        .font(.system(size: 17, weight: .semibold))
-                    Spacer()
-                    Button {
-                        displayMonth = calendar.date(byAdding: .month, value: 1, to: displayMonth)!
-                    } label: {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundStyle(.secondary)
-                    }
-                    .buttonStyle(.plain)
+            VStack(spacing: 12) {
+                calendarCard
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+
+                issueListCard
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 30)
+            }
+        }
+        .background(Color.secondary.opacity(0.06))
+        .sheet(isPresented: $showAddTask) {
+            CalendarAddTaskSheet(date: selectedDate, projects: projects)
+                .presentationDetents([.height(310)])
+        }
+    }
+
+    // MARK: - Calendar Card
+    private var calendarCard: some View {
+        VStack(spacing: 0) {
+            calendarHeader
+            Divider().opacity(0.5)
+            weekdayHeader
+            Divider().opacity(0.3)
+            calendarGrid
+            contributionLegend
+        }
+        .background(.background)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.secondary.opacity(0.15), lineWidth: 1))
+    }
+
+    private var calendarHeader: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "calendar")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(Color.ghGreen)
+            Text(monthTitle(displayMonth))
+                .font(.system(size: 15, weight: .bold, design: .monospaced))
+            Spacer()
+            monthNavButtons
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.secondary.opacity(0.04))
+    }
+
+    private var monthNavButtons: some View {
+        HStack(spacing: 2) {
+            Button {
+                displayMonth = calendar.date(byAdding: .month, value: -1, to: displayMonth)!
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 28, height: 26)
+                    .background(Color.secondary.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            Button {
+                withAnimation(.none) {
+                    displayMonth = Date()
+                    selectedDate = Date()
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 8)
+            } label: {
+                Text("Today")
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 8)
+                    .frame(height: 26)
+                    .background(Color.secondary.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            Button {
+                displayMonth = calendar.date(byAdding: .month, value: 1, to: displayMonth)!
+            } label: {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 28, height: 26)
+                    .background(Color.secondary.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
+    }
 
-                // 달력 그리드
-                VStack(spacing: 0) {
-                    // 요일 헤더
-                    HStack(spacing: 0) {
-                        ForEach(Array(["일","월","화","수","목","금","토"].enumerated()), id: \.offset) { i, d in
-                            Text(d)
-                                .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(i == 0 ? Color.red.opacity(0.7) : i == 6 ? Color.blue.opacity(0.7) : Color.secondary)
-                                .frame(maxWidth: .infinity)
-                        }
+    private var weekdayHeader: some View {
+        HStack(spacing: 0) {
+            ForEach(["Sun","Mon","Tue","Wed","Thu","Fri","Sat"], id: \.self) { d in
+                Text(d)
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+        .padding(.vertical, 6)
+        .background(Color.secondary.opacity(0.02))
+    }
+
+    private var calendarGrid: some View {
+        let weeks = generateDays(for: displayMonth).chunked(into: 7)
+        return VStack(spacing: 0) {
+            ForEach(weeks.indices, id: \.self) { wi in
+                calendarWeekRow(weeks[wi])
+                if wi < weeks.count - 1 {
+                    Rectangle().fill(Color.secondary.opacity(0.1)).frame(height: 1)
+                }
+            }
+        }
+    }
+
+    private func calendarWeekRow(_ week: [Date]) -> some View {
+        HStack(spacing: 0) {
+            ForEach(0..<7, id: \.self) { di in
+                let date = week[di]
+                DayCell(
+                    date: date,
+                    isCurrentMonth: calendar.isDate(date, equalTo: displayMonth, toGranularity: .month),
+                    isToday: calendar.isDateInToday(date),
+                    isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
+                    tasks: tasksForDate(date),
+                    exams: examsForDate(date),
+                    colIndex: di,
+                    contributionLevel: contributionLevel(date)
+                )
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .contentShape(Rectangle())
+                .simultaneousGesture(TapGesture().onEnded { selectedDate = date })
+                if di < 6 {
+                    Rectangle().fill(Color.secondary.opacity(0.1)).frame(width: 1)
+                }
+            }
+        }
+    }
+
+    private var contributionLegend: some View {
+        HStack(spacing: 4) {
+            Spacer()
+            Text("Less")
+                .font(.system(size: 9, design: .monospaced))
+                .foregroundStyle(.secondary)
+            ForEach(0..<5, id: \.self) { level in
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(ghContribColor(level))
+                    .frame(width: 10, height: 10)
+            }
+            Text("More")
+                .font(.system(size: 9, design: .monospaced))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 6)
+        .background(Color.secondary.opacity(0.02))
+    }
+
+    // MARK: - Issue List Card
+    private var issueListCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            issueListHeader
+            if !usedTagsForSelected.isEmpty {
+                tagFilterBar
+            }
+            Divider().opacity(0.5)
+            ForEach(examsForSelected) { exam in
+                ExamEventRow(exam: exam)
+            }
+            if tasksForSelected.isEmpty && examsForSelected.isEmpty {
+                emptyIssueView
+            } else {
+                ForEach(tasksForSelected) { task in
+                    CalendarTaskRow(task: task)
+                }
+            }
+        }
+        .background(.background)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color.secondary.opacity(0.15), lineWidth: 1))
+    }
+
+    private var tagFilterBar: some View {
+        VStack(spacing: 0) {
+            Divider().opacity(0.3)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 5) {
+                    // All 버튼
+                    Button {
+                        selectedTagFilter = nil
+                    } label: {
+                        Text("All")
+                            .font(.system(size: 11, weight: selectedTagFilter == nil ? .semibold : .regular, design: .monospaced))
+                            .foregroundStyle(selectedTagFilter == nil ? .white : .secondary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(selectedTagFilter == nil ? Color.ghGreen : Color.secondary.opacity(0.08))
+                            .clipShape(Capsule())
                     }
-                    .padding(.vertical, 6)
+                    .buttonStyle(.plain)
 
-                    Divider()
-
-                    // 주 단위 행 — 각 행 높이가 독립적으로 늘어남
-                    let weeks = generateDays(for: displayMonth).chunked(into: 7)
-                    VStack(spacing: 0) {
-                        ForEach(weeks.indices, id: \.self) { wi in
-                            HStack(spacing: 0) {
-                                ForEach(0..<7, id: \.self) { di in
-                                    let date = weeks[wi][di]
-                                    DayCell(
-                                        date: date,
-                                        isCurrentMonth: calendar.isDate(date, equalTo: displayMonth, toGranularity: .month),
-                                        isToday: calendar.isDateInToday(date),
-                                        isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
-                                        tasks: tasksForDate(date),
-                                        exams: examsForDate(date),
-                                        colIndex: di
-                                    )
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                                    .contentShape(Rectangle())
-                                    .simultaneousGesture(TapGesture().onEnded { selectedDate = date })
-                                    if di < 6 { Divider() }
-                                }
+                    ForEach(usedTagsForSelected) { tag in
+                        let isSel = selectedTagFilter?.id == tag.id
+                        let col = Color(hex: tag.colorHex) ?? Color.ghGreen
+                        Button { selectedTagFilter = isSel ? nil : tag } label: {
+                            HStack(spacing: 4) {
+                                Circle().fill(col).frame(width: 6, height: 6)
+                                Text(tag.name)
+                                    .font(.system(size: 11, weight: isSel ? .semibold : .regular, design: .monospaced))
+                                    .lineLimit(1)
                             }
-                            if wi < weeks.count - 1 { Divider() }
-                        }
-                    }
-                }
-                .background(.background)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-                .padding(.horizontal, 20)
-
-                // 선택 날짜 태스크 목록
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack {
-                        Text(selectedDateLabel)
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        Button {
-                            showAddTask = true
-                        } label: {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 22))
-                                .foregroundStyle(.blue)
+                            .foregroundStyle(isSel ? .white : .primary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(isSel ? col : col.opacity(0.1))
+                            .clipShape(Capsule())
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-
-                    ForEach(examsForSelected) { exam in
-                        ExamEventRow(exam: exam)
-                    }
-
-                    if tasksForSelected.isEmpty && examsForSelected.isEmpty {
-                        Text("태스크 없음")
-                            .font(.system(size: 15))
-                            .foregroundStyle(.tertiary)
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 16)
-                    } else {
-                        ForEach(tasksForSelected) { task in
-                            CalendarTaskRow(task: task)
-                        }
-                    }
                 }
-                .background(.background)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
-                .padding(.horizontal, 20)
-                .padding(.bottom, 30)
+                .padding(.horizontal, 14)
             }
+            .padding(.vertical, 6)
         }
-        .background(Color.secondary.opacity(0.1))
-        .sheet(isPresented: $showAddTask) {
-            CalendarAddTaskSheet(date: selectedDate, projects: projects)
-                .presentationDetents([.height(340)])
+    }
+
+    private var issueListHeader: some View {
+        HStack(spacing: 0) {
+            HStack(spacing: 5) {
+                Image(systemName: "circle.dotted")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.ghGreen)
+                Text("\(openCount) Open")
+                    .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.primary)
+            }
+            Spacer().frame(width: 16)
+            HStack(spacing: 5) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                Text("\(closedCount) Closed")
+                    .font(.system(size: 12, weight: .regular, design: .monospaced))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            Text(selectedDateLabel)
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundStyle(.secondary)
+            Spacer().frame(width: 8)
+            Button { showAddTask = true } label: {
+                HStack(spacing: 3) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 10, weight: .semibold))
+                    Text("New")
+                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.ghGreen)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Color.secondary.opacity(0.04))
+    }
+
+    private var emptyIssueView: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "tray")
+                .font(.system(size: 16))
+            Text("No issues for this date")
+                .font(.system(size: 13, design: .monospaced))
+        }
+        .foregroundStyle(.secondary.opacity(0.4))
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 24)
+    }
+
+    func ghContribColor(_ level: Int) -> Color {
+        switch level {
+        case 0: return Color.secondary.opacity(0.1)
+        case 1: return Color.ghGreen.opacity(0.3)
+        case 2: return Color.ghGreen.opacity(0.55)
+        case 3: return Color.ghGreen.opacity(0.8)
+        default: return Color.ghGreen
         }
     }
 
@@ -181,31 +386,52 @@ struct DayCell: View {
     var tasks: [Task]
     var exams: [ExamEvent] = []
     var colIndex: Int = 0
+    var contributionLevel: Int = 0
 
     var dayNum: Int { Calendar.current.component(.day, from: date) }
     var numColor: Color {
         if isSelected { return .white }
-        if isToday    { return .blue }
+        if isToday    { return Color.ghGreen }
         if !isCurrentMonth { return Color.primary.opacity(0.18) }
-        if colIndex == 0 { return Color.red.opacity(0.8) }
-        if colIndex == 6 { return Color.blue.opacity(0.8) }
         return .primary
     }
 
+    func contribColor(_ level: Int) -> Color {
+        switch level {
+        case 0: return Color.secondary.opacity(0.08)
+        case 1: return Color.ghGreen.opacity(0.3)
+        case 2: return Color.ghGreen.opacity(0.55)
+        case 3: return Color.ghGreen.opacity(0.8)
+        default: return Color.ghGreen
+        }
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 1) {
-            // 날짜 숫자
-            ZStack {
-                if isSelected {
-                    Circle().fill(Color.blue).frame(width: 18, height: 18)
-                } else if isToday {
-                    Circle().stroke(Color.blue, lineWidth: 1.2).frame(width: 18, height: 18)
+        VStack(alignment: .leading, spacing: 2) {
+            // 날짜 숫자 + contribution dot
+            HStack(spacing: 3) {
+                ZStack {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 4)
+                            .fill(Color.ghGreen)
+                            .frame(width: 20, height: 18)
+                    } else if isToday {
+                        RoundedRectangle(cornerRadius: 4)
+                            .strokeBorder(Color.ghGreen, lineWidth: 1.5)
+                            .frame(width: 20, height: 18)
+                    }
+                    Text("\(dayNum)")
+                        .font(.system(size: 10, weight: isToday || isSelected ? .bold : .medium, design: .monospaced))
+                        .foregroundStyle(numColor)
                 }
-                Text("\(dayNum)")
-                    .font(.system(size: 10, weight: isToday || isSelected ? .bold : .regular))
-                    .foregroundStyle(numColor)
+                .frame(width: 20, height: 18)
+
+                if isCurrentMonth && contributionLevel > 0 {
+                    RoundedRectangle(cornerRadius: 2)
+                        .fill(contribColor(contributionLevel))
+                        .frame(width: 8, height: 8)
+                }
             }
-            .frame(width: 18, height: 18)
 
             // 태스크 칩
             ForEach(tasks) { task in
@@ -222,7 +448,7 @@ struct DayCell: View {
                             .frame(width: 2)
                             .frame(maxHeight: .infinity)
                         Text(task.title)
-                            .font(.system(size: 8))
+                            .font(.system(size: 8, design: .monospaced))
                             .foregroundStyle(
                                 task.isCompleted
                                     ? Color.secondary.opacity(0.5)
@@ -250,7 +476,7 @@ struct DayCell: View {
                         .font(.system(size: 6))
                         .foregroundStyle(col)
                     Text(exam.title)
-                        .font(.system(size: 8))
+                        .font(.system(size: 8, design: .monospaced))
                         .foregroundStyle(isCurrentMonth ? col.opacity(0.9) : col.opacity(0.4))
                         .lineLimit(1)
                 }
@@ -278,49 +504,48 @@ struct CalendarTaskRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
-            Button {
-                task.isCompleted.toggle()
-                try? modelContext.save()
-            } label: {
-                ZStack {
-                    Circle()
-                        .strokeBorder(projColor.opacity(0.6), lineWidth: 1.5)
-                        .frame(width: 20, height: 20)
-                    if task.isCompleted {
-                        Circle().fill(projColor).frame(width: 20, height: 20)
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(.white)
-                    }
-                }
-                .frame(width: 36, height: 36)
+        HStack(spacing: 8) {
+            // GitHub issue icon
+            Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle.dotted")
+                .font(.system(size: 14))
+                .foregroundStyle(task.isCompleted ? Color.secondary : Color.ghGreen)
+                .frame(width: 20)
                 .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
+                .onTapGesture {
+                    task.isCompleted.toggle()
+                    try? modelContext.save()
+                }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(task.title)
-                    .font(.system(size: 14))
-                    .foregroundStyle(task.isCompleted ? Color.secondary : Color.primary)
-                    .strikethrough(task.isCompleted, color: Color.secondary.opacity(0.6))
-                HStack(spacing: 4) {
-                    if let proj = task.project {
-                        Text(proj.name).font(.system(size: 12)).foregroundStyle(.secondary)
-                    }
+            // 태그 색상 dot
+            if !task.tags.isEmpty {
+                HStack(spacing: 2) {
                     ForEach(task.tags) { tag in
-                        TagChip(tag: tag)
+                        Circle()
+                            .fill(Color(hex: tag.colorHex) ?? Color.ghGreen)
+                            .frame(width: 6, height: 6)
                     }
                 }
             }
+
+            Text(task.title)
+                .font(.system(size: 13, weight: task.isCompleted ? .regular : .medium, design: .monospaced))
+                .foregroundStyle(task.isCompleted ? Color.secondary : Color.primary)
+                .strikethrough(task.isCompleted, color: Color.secondary.opacity(0.5))
+                .lineLimit(1)
+
             Spacer()
+
             if task.totalSeconds > 0 {
-                Text(task.formattedTime).font(.system(size: 13)).foregroundStyle(.secondary)
+                HStack(spacing: 2) {
+                    Image(systemName: "clock").font(.system(size: 8))
+                    Text(task.formattedTime).font(.system(size: 9, design: .monospaced))
+                }
+                .foregroundStyle(.secondary)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .overlay(alignment: .bottom) { Divider().padding(.leading, 52) }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 6)
+        .overlay(alignment: .bottom) { Divider().opacity(0.3).padding(.leading, 42) }
         .contextMenu {
             Button {
                 showEdit = true
@@ -354,7 +579,7 @@ struct CalendarTaskRow: View {
     }
 }
 
-// MARK: - 할일 추가 시트
+// MARK: - 할일 추가 시트 (compact)
 struct CalendarAddTaskSheet: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
@@ -367,202 +592,246 @@ struct CalendarAddTaskSheet: View {
 
     @State private var title = ""
     @State private var selectedProject: Project? = nil
-    @State private var tempTask: Task? = nil
+    @State private var tagInput = ""
+    @State private var selectedTags: [Tag] = []
 
     var sortedProjects: [Project] { projects.sorted { $0.name < $1.name } }
     var canSubmit: Bool { !title.trimmingCharacters(in: .whitespaces).isEmpty }
+    var tagSuggestions: [Tag] {
+        guard !tagInput.isEmpty else { return [] }
+        let q = tagInput.lowercased()
+        return allTags.filter { tag in tag.name.lowercased().contains(q) && !selectedTags.contains(where: { s in s.id == tag.id }) }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            // 핸들
-            RoundedRectangle(cornerRadius: 3)
-                .fill(Color.secondary.opacity(0.3))
-                .frame(width: 36, height: 5)
-                .padding(.top, 10)
-                .padding(.bottom, 14)
-
-            // 제목 입력
-            HStack(spacing: 10) {
-                ZStack {
-                    Circle()
-                        .strokeBorder(
-                            selectedProject.flatMap { Color(hex: $0.colorHex) } ?? Color.secondary.opacity(0.4),
-                            lineWidth: 1.5
-                        )
-                        .frame(width: 22, height: 22)
-                }
-
-                TextField("제목 입력", text: $title)
-                    .focused($focused)
-                    .font(.system(size: 17))
-                    .onSubmit { if canSubmit { submit() } }
-            }
-            .padding(.horizontal, 20)
-            .padding(.bottom, 16)
-
+            sheetHandle
+            titleField
             Divider()
-
-            // 프로젝트 선택
-            HStack(spacing: 10) {
-                Image(systemName: "folder")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 22)
-
-                Menu {
-                    Button {
-                        selectedProject = nil
-                    } label: {
-                        HStack {
-                            Text("없음")
-                            if selectedProject == nil { Image(systemName: "checkmark") }
-                        }
-                    }
-                    if !sortedProjects.isEmpty { Divider() }
-                    ForEach(sortedProjects) { project in
-                        Button {
-                            selectedProject = project
-                            applyProjectTag(project)
-                        } label: {
-                            HStack {
-                                Text(project.name)
-                                if selectedProject?.id == project.id { Image(systemName: "checkmark") }
-                            }
-                        }
-                    }
-                } label: {
-                    HStack(spacing: 6) {
-                        if let p = selectedProject {
-                            Circle()
-                                .fill(Color(hex: p.colorHex) ?? .blue)
-                                .frame(width: 8, height: 8)
-                            Text(p.name)
-                                .font(.system(size: 14))
-                                .foregroundStyle(.primary)
-                        } else {
-                            Text("프로젝트 선택")
-                                .font(.system(size: 14))
-                                .foregroundStyle(.secondary)
-                        }
-                        Image(systemName: "chevron.up.chevron.down")
-                            .font(.system(size: 10))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                .buttonStyle(.plain)
-
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-
+            projectSelector
             Divider()
-
-            // 태그 선택
-            HStack(spacing: 10) {
-                Image(systemName: "tag")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 22)
-                if let task = tempTask {
-                    TagPickerButton(task: task)
-                }
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 10)
-
+            tagInputSection
             Divider()
-
-            // 날짜
-            HStack(spacing: 10) {
-                Image(systemName: "calendar")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 22)
-                Text(dateLabel(date))
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-                Spacer()
-            }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 12)
-
+            dateRow
             Divider()
-
             Spacer()
-
-            // 버튼
-            HStack(spacing: 10) {
-                Button {
-                    // 취소 시 임시 태스크 삭제
-                    if let t = tempTask { modelContext.delete(t) }
-                    try? modelContext.save()
-                    dismiss()
-                } label: {
-                    Text("취소")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 13)
-                        .background(Color.secondary.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .buttonStyle(.plain)
-
-                Button { submit() } label: {
-                    Text("추가")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(canSubmit ? .white : .secondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 13)
-                        .background(canSubmit ? Color.blue : Color.secondary.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .buttonStyle(.plain)
-                .disabled(!canSubmit)
-            }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
+            actionButtons
         }
         .background(.background)
-        .onAppear {
-            focused = true
-            // TagPickerButton needs a Task to bind to — create temp task now
-            let t = Task(title: "__temp__", project: nil)
-            t.dueDate = date
-            modelContext.insert(t)
-            try? modelContext.save()
-            tempTask = t
+        .onAppear { focused = true }
+    }
+
+    private var sheetHandle: some View {
+        RoundedRectangle(cornerRadius: 3)
+            .fill(Color.secondary.opacity(0.3))
+            .frame(width: 36, height: 5)
+            .padding(.top, 8)
+            .padding(.bottom, 10)
+    }
+
+    private var titleField: some View {
+        let borderColor = selectedProject.flatMap { Color(hex: $0.colorHex) } ?? Color.secondary.opacity(0.4)
+        return HStack(spacing: 8) {
+            Circle()
+                .strokeBorder(borderColor, lineWidth: 1.5)
+                .frame(width: 18, height: 18)
+            TextField("새 태스크", text: $title)
+                .focused($focused)
+                .font(.system(size: 15))
+                .onSubmit { if canSubmit { submit() } }
+        }
+        .padding(.horizontal, 16)
+        .padding(.bottom, 10)
+    }
+
+    private var projectSelector: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                Button { selectedProject = nil } label: {
+                    Text("없음")
+                        .font(.system(size: 12, weight: selectedProject == nil ? .semibold : .regular))
+                        .foregroundStyle(selectedProject == nil ? .white : .secondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(selectedProject == nil ? Color.ghGreen : Color.secondary.opacity(0.08))
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+
+                ForEach(sortedProjects) { proj in
+                    let isSel = selectedProject?.id == proj.id
+                    let col = Color(hex: proj.colorHex) ?? Color.ghGreen
+                    Button { selectedProject = proj } label: {
+                        HStack(spacing: 4) {
+                            Circle().fill(col).frame(width: 6, height: 6)
+                            Text(proj.name)
+                                .font(.system(size: 12, weight: isSel ? .semibold : .regular))
+                                .lineLimit(1)
+                        }
+                        .foregroundStyle(isSel ? .white : .primary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(isSel ? col : col.opacity(0.1))
+                        .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16)
+        }
+        .padding(.vertical, 8)
+    }
+
+    private var tagInputSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 4) {
+                Image(systemName: "tag")
+                    .font(.system(size: 10))
+                    .foregroundStyle(.secondary)
+                ForEach(selectedTags) { tag in
+                    tagChipView(tag)
+                }
+                TextField("태그 추가", text: $tagInput)
+                    .font(.system(size: 12, design: .monospaced))
+                    .onSubmit { addTagFromInput() }
+            }
+            if !tagSuggestions.isEmpty {
+                tagSuggestionList
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 6)
+    }
+
+    private func tagChipView(_ tag: Tag) -> some View {
+        let col = Color(hex: tag.colorHex) ?? Color.ghGreen
+        return HStack(spacing: 2) {
+            Text(tag.name)
+                .font(.system(size: 10, weight: .semibold, design: .monospaced))
+            Button { selectedTags.removeAll { $0.id == tag.id } } label: {
+                Image(systemName: "xmark").font(.system(size: 7, weight: .bold))
+            }
+            .buttonStyle(.plain)
+        }
+        .foregroundStyle(col)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(col.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+    }
+
+    private var tagSuggestionList: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 4) {
+                ForEach(tagSuggestions) { tag in
+                    let col = Color(hex: tag.colorHex) ?? Color.ghGreen
+                    Button {
+                        selectedTags.append(tag)
+                        tagInput = ""
+                    } label: {
+                        Text(tag.name)
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .foregroundStyle(col)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(col.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
         }
     }
 
+    private var dateRow: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "calendar")
+                .font(.system(size: 12))
+                .foregroundStyle(Color.ghGreen)
+            Text(dateLabel(date))
+                .font(.system(size: 13, design: .monospaced))
+                .foregroundStyle(.secondary)
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+    }
+
+    private var actionButtons: some View {
+        HStack(spacing: 8) {
+            Button { dismiss() } label: {
+                Text("취소")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 11)
+                    .background(Color.secondary.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+            .buttonStyle(.plain)
+
+            Button { submit() } label: {
+                Text("추가")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(canSubmit ? .white : .secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 11)
+                    .background(canSubmit ? Color.ghGreen : Color.secondary.opacity(0.12))
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+            .buttonStyle(.plain)
+            .disabled(!canSubmit)
+        }
+        .padding(.horizontal, 14)
+        .padding(.bottom, 14)
+    }
+
     func applyProjectTag(_ project: Project) {
-        guard let task = tempTask else { return }
-        // 기존 프로젝트 태그 제거 (이전 프로젝트명과 같은 태그)
-        task.tags.removeAll { tag in projects.contains { $0.name == tag.name } }
         // 프로젝트명과 동일한 태그 찾거나 새로 생성
         let existing = allTags.first { $0.name == project.name }
-        let tag = existing ?? {
+        if existing == nil {
             let t = Tag(name: project.name, colorHex: project.colorHex)
             modelContext.insert(t)
-            return t
-        }()
-        if !task.tags.contains(where: { $0.id == tag.id }) {
-            task.tags.append(tag)
+            try? modelContext.save()
         }
-        try? modelContext.save()
+    }
+
+    func addTagFromInput() {
+        let name = tagInput.trimmingCharacters(in: .whitespaces)
+        guard !name.isEmpty else { return }
+        if let existing = allTags.first(where: { $0.name.lowercased() == name.lowercased() }) {
+            if !selectedTags.contains(where: { $0.id == existing.id }) {
+                selectedTags.append(existing)
+            }
+        } else {
+            let col = selectedProject.map { $0.colorHex } ?? "8E8E93"
+            let newTag = Tag(name: name, colorHex: col)
+            modelContext.insert(newTag)
+            selectedTags.append(newTag)
+        }
+        tagInput = ""
     }
 
     func submit() {
         let trimmed = title.trimmingCharacters(in: .whitespaces)
-        guard !trimmed.isEmpty, let task = tempTask else { return }
-        task.title = trimmed
-        task.project = selectedProject
+        guard !trimmed.isEmpty else { return }
+        let task = Task(title: trimmed, project: selectedProject)
         task.dueDate = date
+        // 프로젝트 태그 자동 적용
         if let p = selectedProject {
+            applyProjectTag(p)
+            if let tag = allTags.first(where: { $0.name == p.name }) {
+                task.tags.append(tag)
+            }
             p.tasks.append(task)
         }
+        // 직접 입력/선택한 태그 추가
+        for tag in selectedTags {
+            if !task.tags.contains(where: { $0.id == tag.id }) {
+                task.tags.append(tag)
+            }
+        }
+        modelContext.insert(task)
         try? modelContext.save()
         dismiss()
     }
@@ -582,29 +851,33 @@ struct ExamEventRow: View {
     var col: Color { Color(hex: exam.colorHex) ?? .orange }
 
     var body: some View {
-        HStack(spacing: 12) {
-            ZStack {
-                Circle()
-                    .fill(col.opacity(0.15))
-                    .frame(width: 36, height: 36)
-                Image(systemName: exam.icon)
-                    .font(.system(size: 14))
-                    .foregroundStyle(col)
-            }
+        HStack(spacing: 8) {
+            Image(systemName: exam.icon)
+                .font(.system(size: 14))
+                .foregroundStyle(col)
+                .frame(width: 20)
+
             VStack(alignment: .leading, spacing: 2) {
                 Text(exam.title)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 13, weight: .medium, design: .monospaced))
                     .foregroundStyle(.primary)
                 if let area = exam.project.area {
                     Text(area.name)
-                        .font(.system(size: 12))
+                        .font(.system(size: 10, design: .monospaced))
                         .foregroundStyle(.secondary)
                 }
             }
             Spacer()
+            Text("exam")
+                .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                .foregroundStyle(col)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(col.opacity(0.12))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .overlay(alignment: .bottom) { Divider().padding(.leading, 52) }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 6)
+        .overlay(alignment: .bottom) { Divider().opacity(0.3).padding(.leading, 42) }
     }
 }

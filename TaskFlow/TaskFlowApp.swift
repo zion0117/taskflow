@@ -34,41 +34,7 @@ struct TaskFlowApp: App {
             UserDefaults.standard.set(true, forKey: "didSeedSchoolArea")
         }
 
-        // 시간표 시드
-        if !UserDefaults.standard.bool(forKey: "didSeedScheduleV3") {
-            let ctx = ModelContext(container)
-            // 기존 시드 데이터 삭제
-            let old = (try? ctx.fetch(FetchDescriptor<WeeklySchedule>())) ?? []
-            for o in old { ctx.delete(o) }
-            // (제목, 요일(월0~일6), 시작시, 시작분, 종료시, 종료분, 색상hex, 장소)
-            let data: [(String, Int, Int, Int, Int, Int, String, String)] = [
-                // ── 월요일 ──
-                ("Network Security",        0,  9, 0, 11, 0, "93C5FD", "공학b151"),
-                ("신화·상상력·문화",           0, 11, 0, 12, 0, "86EFAC", "캠b146"),
-                // ── 화요일 ──
-                ("국가안보론",                1, 11, 0, 12, 0, "C4B5FD", "학754"),
-                ("북한학",                   1, 12, 0, 14, 0, "FDBA74", "학754"),
-                ("4차산업혁명과창의적인재",     1, 14, 0, 15, 0, "67E8F9", "학109"),
-                ("SW리더십과기업가정신",       1, 17, 0, 18, 0, "F9A8D4", "공학b153"),
-                // ── 목요일 ──
-                ("Network Security",        3, 11, 0, 12, 0, "93C5FD", "공학b151"),
-                ("신화·상상력·문화",           3, 12, 0, 14, 0, "86EFAC", "캠b146"),
-                // ── 금요일 ──
-                ("국가안보론",                4, 11, 0, 12, 0, "C4B5FD", "학754"),
-                ("북한학",                   4, 14, 0, 15, 0, "FDBA74", "학754"),
-                ("4차산업혁명과창의적인재",     4, 15, 0, 17, 0, "67E8F9", "학109"),
-            ]
-            for d in data {
-                ctx.insert(WeeklySchedule(
-                    title: d.0, dayOfWeek: d.1,
-                    startHour: d.2, startMinute: d.3,
-                    endHour: d.4, endMinute: d.5,
-                    colorHex: d.6, location: d.7
-                ))
-            }
-            try? ctx.save()
-            UserDefaults.standard.set(true, forKey: "didSeedScheduleV3")
-        }
+        // 시간표 시드 제거됨 — 사용자가 직접 입력
 
     }
 
@@ -90,6 +56,7 @@ struct TaskFlowApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .tint(Color.ghGreen)
         }
         .modelContainer(container)
     }
